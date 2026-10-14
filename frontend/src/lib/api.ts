@@ -2,7 +2,14 @@
 
 import { goToSignIn } from "./auth";
 import { API_BASE_URL } from "./config";
-import type { Meeting, MeetingSession, MyActionItem, ScheduleMeetingInput, User } from "./types";
+import type {
+  Meeting,
+  MeetingSession,
+  MyActionItem,
+  Recap,
+  ScheduleMeetingInput,
+  User,
+} from "./types";
 
 export class ApiError extends Error {
   /** HTTP status code, or 0 when the server could not be reached at all. */
@@ -109,6 +116,11 @@ export const api = {
 
   // --- action items ---
   listMyActionItems: () => request<MyActionItem[]>("/action-items"),
+  // Without a key the recap needs an account, so a 401 leads to sign-in.
+  getRecap: (code: string, key: string | null) =>
+    key
+      ? request<Recap>(`/meetings/${code}/recap?key=${encodeURIComponent(key)}`, SIGNED_OUT_OK)
+      : request<Recap>(`/meetings/${code}/recap`),
   setActionItemDone: (id: number, done: boolean) =>
     request<MyActionItem>(`/action-items/${id}`, {
       method: "PATCH",

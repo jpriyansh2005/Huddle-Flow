@@ -1,6 +1,7 @@
 "use client";
 
 import { Volume2 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -8,6 +9,7 @@ import { useToast } from "@/components/ui/Toast";
 import { useLocalMedia } from "@/hooks/useLocalMedia";
 import { useMeetingRoom } from "@/hooks/useMeetingRoom";
 import { copyToClipboard } from "@/lib/invitation";
+import { recapPath } from "@/lib/recap";
 import { clearSession, type StoredSession } from "@/lib/session";
 
 import { AgendaBar } from "./AgendaBar";
@@ -22,7 +24,10 @@ import { VideoGrid } from "./VideoGrid";
 
 /** Messages for the ways a meeting can be over for this participant. */
 const CLOSED_NOTICES = {
-  ended: { title: "This meeting has been ended by the host", message: "Thanks for joining." },
+  ended: {
+    title: "This meeting has been ended by the host",
+    message: "Thanks for joining. The recap has the notes, action items and chat.",
+  },
   removed: {
     title: "You have been removed from this meeting",
     message: "The host removed you from the meeting.",
@@ -93,8 +98,11 @@ export function MeetingRoom({ session }: { session: StoredSession }) {
   }
 
   function endForAll() {
-    room.endMeeting();
-    leave();
+    // The server closes everyone's room, ours included, and we then show the
+    // "ended" screen with the recap link. Offline, the message cannot be
+    // sent, so just leave.
+    if (room.status === "connected") room.endMeeting();
+    else leave();
   }
 
   // The meeting is over for us: forget the session and show why.
@@ -105,7 +113,31 @@ export function MeetingRoom({ session }: { session: StoredSession }) {
   }, [isClosed, meeting.code]);
 
   if (closedNotice) {
-    return <RoomNotice title={closedNotice.title} message={closedNotice.message} />;
+    const ended = room.status === "ended";
+    return (
+      <RoomNotice
+        title={ended && isHost ? "You ended the meeting" : closedNotice.title}
+        message={closedNotice.message}
+        actions={
+          ended && room.recapKey ? (
+            <>
+              <Link
+                href={recapPath(meeting.code, room.recapKey)}
+                className="flex h-11 items-center justify-center rounded-xl bg-brand text-[15px] font-medium text-white shadow-card hover:bg-brand-hover"
+              >
+                View the recap
+              </Link>
+              <Link
+                href="/"
+                className="flex h-11 items-center justify-center rounded-xl border border-field bg-white text-[15px] font-medium text-ink hover:bg-hover"
+              >
+                Back to home
+              </Link>
+            </>
+          ) : undefined
+        }
+      />
+    );
   }
 
   return (

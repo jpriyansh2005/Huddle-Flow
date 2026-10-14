@@ -74,6 +74,13 @@ Decisions worth knowing:
   applied when the app starts (`db/migrate.py`). Migrations are written with
   plain SQLAlchemy types, so later changes to the app cannot break old ones.
   A test checks that the migrations build exactly what the models describe.
+- **Migrations never cascade on SQLite.** SQLite changes a column by copying
+  the table, dropping the old one and renaming the copy. With foreign keys on,
+  dropping `meetings` would delete every participant, note and agenda item.
+  So `db/migrate.py` switches foreign keys off around the migration (outside
+  the transaction, where SQLite honours it), checks every reference with
+  `PRAGMA foreign_key_check` before committing, and switches them back on. A
+  test fills the old schema with rows and checks they survive the upgrade.
 - **The demo is always ready.** When the database has no meetings, startup
   gives the demo account sample meetings, so a fresh deploy is never empty.
 
@@ -108,6 +115,7 @@ erDiagram
     MEETINGS {
         int id PK
         string code UK "public 11-digit meeting ID"
+        string recap_key UK "secret in the recap share link"
         int host_id FK
         string title
         text description
@@ -307,6 +315,35 @@ Files: `backend/app/services/record_service.py`,
   `record_events.py`. Shared helpers (who is acting, host-only checks, payload
   validation, "change the meeting and broadcast") live in `realtime/context.py`.
 
+### The recap
+
+Files: `backend/app/services/recap_service.py`, `frontend/src/app/recap/`,
+`frontend/src/components/recap/`, `frontend/src/lib/recap.ts`.
+
+- **Who may read it.** `GET /meetings/{code}/recap` answers the host, any
+  signed-in person who attended (their attendance row has their `user_id`),
+  and anyone whose `?key=` matches the meeting's `recap_key`. The key is
+  compared in constant time. With no account and no key the answer is 401, so
+  the browser goes to sign-in and comes back; a wrong key or someone else's
+  meeting gets the same 404 either way.
+- **How people get the link.** `room_state` carries the key to everyone in the
+  room, and the "meeting ended" screen links to `/recap/{code}?key=...`. Only
+  the host's recap response includes the full share URL, for the Share button.
+  The key is a separate random value, never the participant's session token.
+- **Attendance is merged.** Every entry to a room is its own participant row,
+  so someone who rejoined has several. The recap groups rows by account, or by
+  name for guests, and adds up the time, counting overlapping visits (two
+  tabs) once. A visit with no leave time ends when the meeting ended.
+- **Planned against actual.** Each agenda topic shows its planned minutes
+  and how far over or under it ran; within a minute counts as on time, since
+  real minutes are rounded.
+- **Ending a meeting.** The host's End button only sends `end_meeting`; the
+  server closes every socket, the host's included, and everyone lands on the
+  ended screen with **View the recap**. If the host is offline at that moment
+  the message cannot go out, so the button simply leaves as before.
+- **Big meetings stay fast.** The recap includes the latest 1,000 chat
+  messages and the total count, and the page says when it is showing fewer.
+
 ## Realtime layer
 
 Files: `backend/app/realtime/`, `frontend/src/lib/realtime/`,
@@ -380,6 +417,7 @@ participant, so it suits small meetings. Large meetings need a media server
 src/app/                 Routes (Next.js App Router)
   (auth)/                Sign in and sign up
   (dashboard)/           Home, Meetings and Action items, sharing the navbar and data
+  recap/[code]/          A meeting's recap, also open to share-link holders
   join/                  Join by meeting ID without an account
   j/[code]/              The invite link: pre-join screen
   meeting/[code]/        The meeting room
@@ -388,6 +426,7 @@ src/components/
   layout/                The app frame: top bar and navigation rail
   dashboard/             Tiles, lists, dialogs
   meeting/               Room, toolbar, panels, video tiles
+  recap/                 The recap page and its sections
 src/hooks/               Stateful logic shared by components
 src/lib/                 Plain TypeScript with no React: API client, formatting, WebRTC
 src/proxy.ts             Sends signed-out visitors from the dashboard to sign-in

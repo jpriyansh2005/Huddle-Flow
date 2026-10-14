@@ -13,6 +13,7 @@ from sqlalchemy import Connection
 from app import models  # noqa: F401  (registers every table on Base.metadata)
 from app.core.config import get_settings
 from app.db.base import Base, UTCDateTime
+from app.db.migrate import check_foreign_keys, sqlite_foreign_keys_off
 from app.db.session import build_engine
 
 config = context.config
@@ -59,8 +60,12 @@ def run_online() -> None:
     engine = build_engine(
         settings.database_url, ssl=settings.database_ssl, ssl_ca=settings.database_ssl_ca
     )
-    with engine.connect() as fresh_connection:
+    # From the command line: the same SQLite protection as the app's start-up
+    # (see app/db/migrate.py), so rebuilding a table cannot cascade deletes.
+    with engine.connect() as fresh_connection, sqlite_foreign_keys_off(fresh_connection):
         run_migrations(fresh_connection)
+        check_foreign_keys(fresh_connection)
+        fresh_connection.commit()
     engine.dispose()
 
 

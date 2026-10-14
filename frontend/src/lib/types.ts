@@ -110,6 +110,28 @@ export type ActionItemInput = {
   due_date?: string | null;
 };
 
+/** One person in a meeting's recap, with all their visits added together. */
+export type Attendee = {
+  name: string;
+  is_host: boolean;
+  first_joined_at: string;
+  seconds_present: number;
+};
+
+/** Everything a meeting produced, for the recap page. */
+export type Recap = {
+  meeting: Meeting;
+  attendees: Attendee[];
+  notes: Note[];
+  action_items: ActionItem[];
+  /** The latest messages; `chat_total` says how many were sent in all. */
+  chat: ChatMessage[];
+  chat_total: number;
+  viewer: { is_host: boolean; signed_in: boolean };
+  /** The link anyone can open. Only the host receives it. */
+  share_url: string | null;
+};
+
 /** An action item on the signed-in user's own list. */
 export type MyActionItem = ActionItem & {
   meeting: { code: string; title: string; started_at: string | null; ended_at: string | null };
@@ -130,6 +152,8 @@ export type ServerEvent =
       notes: Note[];
       action_items: ActionItem[];
       chat: ChatMessage[];
+      /** Opens the recap after the meeting, for everyone who attended. */
+      recap_key: string;
       server_time: string;
     }
   | { type: "agenda_updated"; agenda: AgendaItem[]; server_time: string }

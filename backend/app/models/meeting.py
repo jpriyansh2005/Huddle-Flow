@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 import enum
+import secrets
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, ForeignKey, Index, String, Text
+from sqlalchemy import CheckConstraint, ForeignKey, Index, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.time import utc_now
-from app.db.base import Base, UTCDateTime, enum_column
+from app.db.base import Base, UTCDateTime, enum_column, token_column
 
 if TYPE_CHECKING:
     from app.models.action_item import ActionItem
@@ -46,6 +47,7 @@ class Meeting(Base):
         ),
         # The dashboard lists one host's meetings, filtered by status.
         Index("ix_meetings_host_status", "host_id", "status"),
+        UniqueConstraint("recap_key", name="uq_meetings_recap_key"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -66,6 +68,12 @@ class Meeting(Base):
     # What actually happened.
     started_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
     ended_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+
+    # The secret in a recap's share link. Whoever has the link can read the
+    # recap without an account, like an "anyone with the link" document.
+    recap_key: Mapped[str] = mapped_column(
+        token_column(64), default=lambda: secrets.token_urlsafe(32)
+    )
 
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utc_now, onupdate=utc_now)
