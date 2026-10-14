@@ -1,0 +1,56 @@
+"""How Alembic connects to the database and finds the models.
+
+Migrations run against the app's own engine settings (DATABASE_URL and the
+SSL options), or against a connection passed in by the caller: the app's
+start-up and the tests do that, so they migrate exactly the database they use.
+"""
+
+from logging.config import fileConfig
+
+from alembic import context
+from sqlalchemy import Connection
+
+from app import models  # noqa: F401  (registers every table on Base.metadata)
+from app.core.config import get_settings
+from app.db.base import Base
+from app.db.session import build_engine
+
+config = context.config
+# Logging from alembic.ini only when run from the command line; the app and
+# the tests configure their own.
+if config.config_file_name is not None and config.attributes.get("configure_logger", True):
+    fileConfig(config.config_file_name)
+
+target_metadata = Base.metadata
+
+
+def run_migrations(connection: Connection) -> None:
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        # SQLite cannot alter most column properties in place; batch mode
+        # rebuilds the table instead. Other databases ignore the flag.
+        render_as_batch=connection.dialect.name == "sqlite",
+        compare_type=True,
+    )
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+def run_online() -> None:
+    connection = config.attributes.get("connection")
+    if connection is not None:
+        run_migrations(connection)
+        return
+    settings = get_settings()
+    engine = build_engine(
+        settings.database_url, ssl=settings.database_ssl, ssl_ca=settings.database_ssl_ca
+    )
+    with engine.connect() as fresh_connection:
+        run_migrations(fresh_connection)
+    engine.dispose()
+
+
+if context.is_offline_mode():
+    raise SystemExit("Offline (SQL script) migrations are not supported; run them online.")
+run_online()

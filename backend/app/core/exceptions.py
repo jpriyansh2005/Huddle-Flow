@@ -34,3 +34,28 @@ class NotMeetingHostError(DomainError):
 class MeetingInProgressError(DomainError):
     status_code = 409
     message = "A meeting that is in progress cannot be changed."
+
+
+class NotAuthenticatedError(DomainError):
+    status_code = 401
+    message = "Sign in to continue."
+
+
+class InvalidCredentialsError(DomainError):
+    status_code = 401
+    message = "Incorrect email or password."
+
+
+class EmailTakenError(DomainError):
+    status_code = 409
+    message = "An account with this email already exists. Sign in instead."
+
+
+class TooManyAttemptsError(DomainError):
+    status_code = 429
+    message = "Too many failed sign-in attempts. Try again in a few minutes."
+
+
+class FeatureDisabledError(DomainError):
+    status_code = 404
+    message = "This feature is not available."

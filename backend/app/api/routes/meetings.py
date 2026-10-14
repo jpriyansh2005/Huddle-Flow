@@ -6,7 +6,7 @@ the response. The rules themselves live in ``app/services``.
 
 from fastapi import APIRouter, Response, status
 
-from app.api.deps import CurrentUser, DbSession
+from app.api.deps import CurrentUser, DbSession, OptionalUser
 from app.models import Participant, ParticipantRole
 from app.schemas.meeting import (
     JoinMeetingIn,
@@ -78,10 +78,14 @@ def start(code: str, data: StartMeetingIn, db: DbSession, user: CurrentUser):
 
 
 @router.post("/{code}/join", response_model=SessionOut)
-def join(code: str, data: JoinMeetingIn, db: DbSession):
-    """Guest entry point: join by meeting ID or invite link with a display name."""
+def join(code: str, data: JoinMeetingIn, db: DbSession, user: OptionalUser):
+    """Guest entry point: join by meeting ID or invite link with a display name.
+
+    No account is needed. A signed-in visitor's attendance is linked to their
+    account, so the meeting can later show up for them.
+    """
     meeting = meeting_service.get_meeting_by_code(db, code)
-    participant = participant_service.join_meeting(db, meeting, data.display_name)
+    participant = participant_service.join_meeting(db, meeting, data.display_name, user=user)
     return _session(participant)
 
 

@@ -12,10 +12,11 @@ from datetime import datetime, timedelta
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.core.time import utc_now
 from app.models import Meeting, MeetingKind, MeetingStatus, Participant, ParticipantRole, User
 from app.services.meeting_code import generate_meeting_code
-from app.services.user_service import get_or_create_default_user
+from app.services.user_service import get_or_create_demo_user
 
 # (title, description, starts in, duration in minutes)
 UPCOMING = [
@@ -55,11 +56,17 @@ RECENT = [
 
 
 def seed_database(db: Session) -> bool:
-    """Insert sample data if there are no meetings yet. Returns True if it did."""
+    """Give the demo account sample meetings, if there are no meetings yet.
+
+    Returns True if it inserted them. Nothing is seeded when the demo account
+    is switched off, because the sample meetings belong to it.
+    """
+    if not get_settings().demo_enabled:
+        return False
     if db.scalar(select(func.count()).select_from(Meeting)):
         return False
 
-    host = get_or_create_default_user(db)
+    host = get_or_create_demo_user(db)
     now = _round_up_to_half_hour(utc_now())
 
     for title, description, starts_in, duration in UPCOMING:
@@ -130,10 +137,10 @@ def _round_up_to_half_hour(moment: datetime) -> datetime:
 
 
 if __name__ == "__main__":
-    from app.db.base import Base
+    from app.db.migrate import upgrade_to_latest
     from app.db.session import SessionLocal, engine
 
-    Base.metadata.create_all(engine)
+    upgrade_to_latest(engine)
     with SessionLocal() as session:
         created = seed_database(session)
     print("Sample data inserted." if created else "Database already has meetings; nothing to do.")

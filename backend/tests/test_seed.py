@@ -5,8 +5,10 @@ from app.models import Meeting, Participant
 from tests.conftest import API
 
 
-def test_seed_fills_both_dashboard_lists(client, db):
+def test_seed_fills_both_dashboard_lists_of_the_demo_account(anon_client, db):
     assert seed_database(db) is True
+    client = anon_client
+    assert client.post(f"{API}/auth/demo").status_code == 200
 
     upcoming = client.get(f"{API}/meetings/upcoming").json()
     recent = client.get(f"{API}/meetings/recent").json()

@@ -46,7 +46,7 @@ realtime/       The WebSocket endpoint, its event handlers and the room registry
 services/       The rules: what makes a meeting upcoming, who may start it, and so on.
 models/         SQLAlchemy tables.
 schemas/        Pydantic request and response shapes (validation lives here).
-db/             Engine, session, shared column types, seed data.
+db/             Engine, session, shared column types, migrations runner, seed data.
 core/           Settings, domain errors, time helpers.
 ```
 
@@ -60,19 +60,28 @@ Decisions worth knowing:
   converts any of them to `{"detail": "..."}`, the same shape FastAPI uses for
   its own errors, so the frontend parses one format.
 - **One place decides who the user is.** `api/deps.py::get_current_user`
-  returns the default user. Adding real login later means changing that one
-  function; no route changes.
+  reads the session cookie and returns the signed-in user, or answers 401.
+  Routes just declare `user: CurrentUser`; the join route uses
+  `OptionalUser`, because guests have no account.
 - **All times are UTC.** `db/base.py::UTCDateTime` converts on the way into
-  SQLite and tags values as UTC on the way out. The API rejects timestamps
-  that have no timezone. The browser converts to local time for display.
-- **The database rebuilds itself.** On startup `main.py` creates missing
-  tables and seeds sample data if there are no meetings. Free hosting wipes the
-  disk on each deploy, so this keeps the demo from ever being empty.
+  the database and tags values as UTC on the way out. The API rejects
+  timestamps that have no timezone. The browser converts to local time.
+- **One schema, two databases.** Production runs on MySQL 8; development and
+  tests use SQLite. `db/base.py` hides the differences: tokens use a binary
+  collation on MySQL (it compares text case-insensitively by default), and
+  datetimes keep microseconds. CI runs every test on both.
+- **The schema is versioned.** Alembic migrations in `backend/migrations` are
+  applied when the app starts (`db/migrate.py`). Migrations are written with
+  plain SQLAlchemy types, so later changes to the app cannot break old ones.
+  A test checks that the migrations build exactly what the models describe.
+- **The demo is always ready.** When the database has no meetings, startup
+  gives the demo account sample meetings, so a fresh deploy is never empty.
 
 ### Database schema
 
 ```mermaid
 erDiagram
+    USERS ||--o{ USER_SESSIONS : "signed in as"
     USERS ||--o{ MEETINGS : hosts
     MEETINGS ||--o{ PARTICIPANTS : has
     USERS |o--o{ PARTICIPANTS : "attends as (optional)"
@@ -80,8 +89,16 @@ erDiagram
     USERS {
         int id PK
         string name
-        string email UK
+        string email UK "lower case"
+        string password_hash "Argon2"
         datetime created_at
+    }
+    USER_SESSIONS {
+        int id PK
+        int user_id FK
+        string token_hash UK "SHA-256 of the cookie token"
+        datetime created_at
+        datetime expires_at
     }
     MEETINGS {
         int id PK
@@ -131,7 +148,7 @@ Why it is shaped this way:
 - **Microphone and camera state are not stored.** They change many times a
   minute and mean nothing after the meeting, so they live in memory.
 - **Constraints back up the code.** Enums are `VARCHAR` with `CHECK`
-  constraints (SQLite has no enum type); a `CHECK` makes sure a scheduled
+  constraints, which both SQLite and MySQL 8 enforce; a `CHECK` makes sure a scheduled
   meeting has a start and a duration; deleting a meeting cascades to its
   participants; foreign keys are switched on for every connection because
   SQLite ignores them by default.
@@ -157,17 +174,42 @@ or the host ends it. Everything else is **recent**.
 
 ### Who is the host?
 
-The assignment assumes one logged-in user, so there is no login to tell people
-apart. The entry point decides the role instead:
+The entry point decides the role:
 
 - **Start** (the dashboard's New meeting or Start buttons) calls
-  `POST /meetings/{code}/start`. It requires the logged-in user to own the
+  `POST /meetings/{code}/start`. It requires the signed-in user to own the
   meeting and creates a `host` participant.
-- **Join** (the invite link or the Join dialog) calls
+- **Join** (an invite link, the Join dialog or the public `/join` page) calls
   `POST /meetings/{code}/join` and always creates an ordinary `participant`.
+  No account is needed; if the visitor is signed in, the attendance is linked
+  to their account.
 
 The server checks the role again on every host-only WebSocket message
 (`realtime/events.py::host_only`), because a browser can send anything.
+
+### Accounts and sessions
+
+- **Passwords** are hashed with Argon2 (`pwdlib`). A sign-in with an unknown
+  email still checks a dummy hash, so the response time does not reveal which
+  emails have accounts, and both cases return the same message.
+- **Sessions are stored on the server.** Signing in creates a random token;
+  the browser keeps it in an `HttpOnly`, `SameSite=Lax` cookie (and `Secure`
+  in production) and the `user_sessions` table keeps only its SHA-256 hash and
+  an expiry date. Signing out deletes the row, so a copied cookie stops
+  working at once, which a self-contained token such as a JWT cannot do.
+- **One site for the browser.** The frontend calls `/api/...` on its own
+  address and Next.js forwards the request to the backend (a rewrite in
+  `next.config.ts`). The cookie is therefore first-party; browsers increasingly
+  block cookies set by a different site. The meeting WebSocket still connects
+  to the backend directly and authenticates with the meeting token.
+- **Guessing is slowed down.** `core/rate_limit.py` locks an email for 15
+  minutes after 5 wrong passwords.
+- **Redirects are checked.** After signing in the app returns to `?next=`,
+  but only if that is a path on this site (`lib/auth.ts::safeNextPath`), so a
+  crafted link cannot send people to another website.
+- **Signed-out visitors** are sent to `/login` by `src/proxy.ts` before the
+  dashboard renders. An expired cookie gets a 401 from the API, which also
+  clears the cookie and leads to sign-in, so there is no redirect loop.
 
 ## Realtime layer
 
@@ -237,7 +279,9 @@ participant, so it suits small meetings. Large meetings need a media server
 
 ```
 src/app/                 Routes (Next.js App Router)
+  (auth)/                Sign in and sign up
   (dashboard)/           Home and Meetings, sharing the navbar and data
+  join/                  Join by meeting ID without an account
   j/[code]/              The invite link: pre-join screen
   meeting/[code]/        The meeting room
 src/components/
@@ -247,6 +291,7 @@ src/components/
   meeting/               Room, toolbar, panels, video tiles
 src/hooks/               Stateful logic shared by components
 src/lib/                 Plain TypeScript with no React: API client, formatting, WebRTC
+src/proxy.ts             Sends signed-out visitors from the dashboard to sign-in
 ```
 
 - **One design system.** Every colour, shadow and animation is a token in

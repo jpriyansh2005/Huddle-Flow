@@ -9,10 +9,12 @@ import {
   useState,
 } from "react";
 
+import { useRouter } from "next/navigation";
+
 import { useToast } from "@/components/ui/Toast";
 import { useFetch } from "@/hooks/useFetch";
 import { useMeetingLauncher } from "@/hooks/useMeetingLauncher";
-import { api } from "@/lib/api";
+import { api, errorMessage } from "@/lib/api";
 import { buildInvitation, copyToClipboard } from "@/lib/invitation";
 import type { Meeting, User } from "@/lib/types";
 
@@ -51,6 +53,8 @@ type DashboardContextValue = {
   openScheduleDialog: (meetingToEdit?: Meeting) => void;
   openDeleteDialog: (meeting: Meeting) => void;
   copyInvitation: (meeting: Meeting) => void;
+
+  signOut: () => void;
 };
 
 const DashboardContext = createContext<DashboardContextValue | null>(null);
@@ -74,6 +78,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const { isLaunching, startInstantMeeting, startMeeting } = useMeetingLauncher();
   const [dialog, setDialog] = useState<OpenDialog>(null);
   const showToast = useToast();
+  const router = useRouter();
 
   // Refresh the lists when the user comes back to this tab, for example
   // after hosting a meeting in another one.
@@ -91,6 +96,17 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     showToast(copied ? "Invitation copied to clipboard" : "Couldn't copy the invitation");
   }
 
+  async function signOut() {
+    try {
+      await api.logOut();
+    } catch (error) {
+      // Offline, for example. Staying signed in is safer than pretending.
+      showToast(errorMessage(error));
+      return;
+    }
+    router.replace("/login");
+  }
+
   const value: DashboardContextValue = {
     user: data?.user ?? null,
     upcoming: data?.upcoming ?? [],
@@ -105,6 +121,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     openScheduleDialog: (meeting) => setDialog({ kind: "schedule", meeting }),
     openDeleteDialog: (meeting) => setDialog({ kind: "delete", meeting }),
     copyInvitation,
+    signOut,
   };
 
   return (

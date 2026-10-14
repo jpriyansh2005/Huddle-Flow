@@ -1,14 +1,16 @@
 # Render blueprint for the FastAPI backend.
-# In Render: New > Blueprint, pick this repository, then fill in FRONTEND_URL.
+# In Render: New > Blueprint, pick this repository, then fill in the values
+# marked "sync: false" in the dashboard (they are secrets or depend on you).
 services:
   - type: web
-    name: zoom-clone-api
+    name: zoom-clone-api  # kept so the existing service and its URL stay the same
     runtime: python
     plan: free
     rootDir: backend
     buildCommand: pip install -r requirements.txt
     # One process on purpose: live meeting rooms are kept in memory, so every
-    # WebSocket for a meeting has to reach the same process.
+    # WebSocket for a meeting has to reach the same process. The app applies
+    # database migrations itself when it starts.
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /api/v1/health
     envVars:
@@ -18,3 +20,14 @@ services:
       # Used for CORS and to build invite links.
       - key: FRONTEND_URL
         sync: false
+      # The production database, e.g.
+      # mysql+pymysql://user:password@host:3306/huddleflow?charset=utf8mb4
+      # Leave it unset to fall back to a SQLite file that is wiped on restart.
+      - key: DATABASE_URL
+        sync: false
+      # Hosted MySQL services require an encrypted connection.
+      - key: DATABASE_SSL
+        value: "true"
+      # The session cookie travels only over HTTPS.
+      - key: COOKIE_SECURE
+        value: "true"

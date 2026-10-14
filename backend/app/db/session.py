@@ -1,5 +1,6 @@
 """Database engine and session factory."""
 
+import ssl as ssl_module
 from collections.abc import Iterator
 
 from sqlalchemy import Engine, create_engine, event
@@ -8,17 +9,26 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.core.config import get_settings
 
 
-def build_engine(database_url: str, **kwargs) -> Engine:
-    """Create an engine. For SQLite, also switch on foreign key enforcement."""
-    is_sqlite = database_url.startswith("sqlite")
-    if is_sqlite:
+def build_engine(
+    database_url: str, *, ssl: bool = False, ssl_ca: str | None = None, **kwargs
+) -> Engine:
+    """Create an engine with the options each database needs."""
+    if database_url.startswith("sqlite"):
         # FastAPI runs sync endpoints in a thread pool, so one connection can
         # be used from a thread other than the one that opened it.
         kwargs.setdefault("connect_args", {"check_same_thread": False})
+    else:
+        # Hosted databases close idle connections. Check a connection before
+        # using it, and replace connections before the server drops them.
+        kwargs.setdefault("pool_pre_ping", True)
+        kwargs.setdefault("pool_recycle", 280)
+        if ssl:
+            context = ssl_module.create_default_context(cafile=ssl_ca)
+            kwargs.setdefault("connect_args", {"ssl": context})
 
     engine = create_engine(database_url, **kwargs)
 
-    if is_sqlite:
+    if engine.dialect.name == "sqlite":
 
         @event.listens_for(engine, "connect")
         def enable_foreign_keys(dbapi_connection, _record) -> None:
@@ -30,7 +40,10 @@ def build_engine(database_url: str, **kwargs) -> Engine:
     return engine
 
 
-engine = build_engine(get_settings().database_url)
+_settings = get_settings()
+engine = build_engine(
+    _settings.database_url, ssl=_settings.database_ssl, ssl_ca=_settings.database_ssl_ca
+)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
 

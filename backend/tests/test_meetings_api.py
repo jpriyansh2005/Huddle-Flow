@@ -1,23 +1,28 @@
 from datetime import timedelta
 
+from sqlalchemy import select
+
 from app.core.time import utc_now
-from app.models import Meeting, MeetingKind, MeetingStatus
-from app.services.user_service import get_or_create_default_user
-from tests.conftest import API
+from app.models import Meeting, MeetingKind, MeetingStatus, User
+from tests.conftest import API, HOST_EMAIL
 
 
 def codes(response) -> list[str]:
     return [meeting["code"] for meeting in response.json()]
 
 
-# --- current user -----------------------------------------------------------
+# --- signed-in user ---------------------------------------------------------
 
 
-def test_default_user_is_logged_in(client):
-    response = client.get(f"{API}/users/me")
-
-    assert response.status_code == 200
-    assert response.json()["name"] == "Alex Morgan"
+def test_meeting_routes_require_sign_in(anon_client):
+    for method, path in (
+        ("get", "/meetings/upcoming"),
+        ("get", "/meetings/recent"),
+        ("post", "/meetings/instant"),
+        ("post", "/meetings"),
+    ):
+        response = getattr(anon_client, method)(f"{API}{path}")
+        assert response.status_code == 401, path
 
 
 # --- instant meetings -------------------------------------------------------
@@ -116,7 +121,7 @@ def test_unknown_meeting_id_returns_404(client):
 
 def test_recent_lists_instant_ended_and_past_meetings_newest_first(client, api, db):
     instant = api.create_instant()
-    host = get_or_create_default_user(db)
+    host = db.scalar(select(User).where(User.email == HOST_EMAIL))
     now = utc_now()
     missed = Meeting(
         code="11111111111",
