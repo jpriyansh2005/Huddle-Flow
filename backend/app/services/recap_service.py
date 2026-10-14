@@ -9,6 +9,7 @@ A recap can be read by
 import secrets
 from dataclasses import dataclass
 from datetime import datetime
+from typing import TypeVar
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -16,14 +17,16 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.core.exceptions import DomainError, NotAuthenticatedError
 from app.core.time import utc_now
-from app.models import ChatMessage, Meeting, Participant, ParticipantRole, User
+from app.models import ChatMessage, Meeting, Participant, ParticipantRole, TranscriptLine, User
 from app.schemas.meeting import MeetingOut
 from app.schemas.meeting_record import ActionItemOut, ChatMessageOut, NoteOut
 from app.schemas.recap import AttendeeOut, RecapOut, RecapViewerOut
+from app.schemas.summary import SummaryOut, TranscriptLineOut
 from app.services import meeting_service
 
-# A recap shows at most this many chat messages, the latest ones.
+# A recap shows at most this many chat messages and transcript lines, the latest ones.
 RECAP_CHAT_LIMIT = 1000
+RECAP_TRANSCRIPT_LIMIT = 2000
 
 
 class RecapNotFoundError(DomainError):
@@ -64,8 +67,18 @@ def get_recap(db: Session, code: str, user: User | None, key: str | None) -> Rec
         attendees=attendees(meeting, utc_now()),
         notes=[NoteOut.model_validate(note) for note in meeting.notes],
         action_items=[ActionItemOut.model_validate(item) for item in meeting.action_items],
-        chat=[ChatMessageOut.model_validate(message) for message in _chat(db, meeting)],
-        chat_total=db.scalar(select(func.count()).where(ChatMessage.meeting_id == meeting.id)),
+        chat=[
+            ChatMessageOut.model_validate(message)
+            for message in _latest(db, ChatMessage, meeting, RECAP_CHAT_LIMIT)
+        ],
+        chat_total=_count(db, ChatMessage, meeting),
+        transcript=[
+            TranscriptLineOut.model_validate(line)
+            for line in _latest(db, TranscriptLine, meeting, RECAP_TRANSCRIPT_LIMIT)
+        ],
+        transcript_total=_count(db, TranscriptLine, meeting),
+        summary=_summary(meeting),
+        summaries_enabled=get_settings().summaries_enabled,
         viewer=RecapViewerOut(is_host=is_host, signed_in=user is not None),
         share_url=recap_url(meeting) if is_host else None,
     )
@@ -82,14 +95,26 @@ def _attended(db: Session, meeting: Meeting, user: User) -> bool:
     )
 
 
-def _chat(db: Session, meeting: Meeting) -> list[ChatMessage]:
+Row = TypeVar("Row", ChatMessage, TranscriptLine)
+
+
+def _latest(db: Session, model: type[Row], meeting: Meeting, limit: int) -> list[Row]:
+    """The newest ``limit`` rows of a meeting's chat or transcript, oldest first."""
     newest = db.scalars(
-        select(ChatMessage)
-        .where(ChatMessage.meeting_id == meeting.id)
-        .order_by(ChatMessage.id.desc())
-        .limit(RECAP_CHAT_LIMIT)
+        select(model).where(model.meeting_id == meeting.id).order_by(model.id.desc()).limit(limit)
     ).all()
     return list(reversed(newest))
+
+
+def _count(db: Session, model: type[Row], meeting: Meeting) -> int:
+    return db.scalar(select(func.count()).where(model.meeting_id == meeting.id))
+
+
+def _summary(meeting: Meeting) -> SummaryOut | None:
+    summary = meeting.summary
+    if summary is None:
+        return None
+    return SummaryOut(**summary.content, model=summary.model, created_at=summary.created_at)
 
 
 @dataclass

@@ -95,6 +95,8 @@ erDiagram
     MEETINGS ||--o{ NOTES : records
     MEETINGS ||--o{ ACTION_ITEMS : produces
     MEETINGS ||--o{ CHAT_MESSAGES : keeps
+    MEETINGS ||--o{ TRANSCRIPT_LINES : captions
+    MEETINGS ||--o| MEETING_SUMMARIES : "summed up by"
     USERS |o--o{ PARTICIPANTS : "attends as (optional)"
     USERS |o--o{ ACTION_ITEMS : "owns (optional)"
 
@@ -116,6 +118,7 @@ erDiagram
         int id PK
         string code UK "public 11-digit meeting ID"
         string recap_key UK "secret in the recap share link"
+        bool captions_on "the host's live-captions switch"
         int host_id FK
         string title
         text description
@@ -175,6 +178,21 @@ erDiagram
         string sender_name
         text text
         datetime sent_at
+    }
+    TRANSCRIPT_LINES {
+        int id PK
+        int meeting_id FK
+        int participant_id FK
+        string speaker_name
+        string text "one finished sentence"
+        datetime spoken_at
+    }
+    MEETING_SUMMARIES {
+        int id PK
+        int meeting_id FK "unique: one per meeting"
+        json content "overview, key_points, decisions, open_questions"
+        string model
+        datetime created_at
     }
 ```
 
@@ -342,7 +360,66 @@ Files: `backend/app/services/recap_service.py`, `frontend/src/app/recap/`,
   ended screen with **View the recap**. If the host is offline at that moment
   the message cannot go out, so the button simply leaves as before.
 - **Big meetings stay fast.** The recap includes the latest 1,000 chat
-  messages and the total count, and the page says when it is showing fewer.
+  messages and 2,000 transcript lines with their totals, and the page says
+  when it is showing fewer.
+
+### Live captions
+
+Files: `frontend/src/lib/realtime/speechRecognizer.ts`,
+`frontend/src/lib/realtime/captionThrottle.ts`,
+`frontend/src/hooks/useSpeechCaptions.ts`,
+`backend/app/realtime/caption_events.py`, `backend/app/services/caption_service.py`.
+
+- **Speech becomes text in the speaker's browser.** Each browser runs the
+  Web Speech API on its own user's microphone, only while the host has
+  captions on and that user is unmuted, and sends the text. No audio goes
+  through our server, so captions cost nothing to run and work with the
+  peer-to-peer video.
+- **Unfinished and finished text.** While someone talks, the recogniser keeps
+  revising its guess; guesses go out as `caption` with `final: false` at most
+  every 300 ms (`CaptionThrottle`) and are only displayed. A finished sentence
+  goes out at once with `final: true` and is saved as a `transcript_lines` row.
+- **The host's switch is in the database** (`meetings.captions_on`), so a
+  refresh or a late joiner sees the right state. The server drops captions
+  that arrive while it is off, including ones that were on their way when the
+  host switched it off, so nothing is saved without the room being told.
+- **The recogniser is restarted** when it stops by itself (after a pause or a
+  minute of speech), at most 8 times in 30 seconds. If the browser refuses the
+  microphone or keeps failing, it stops and the person is told why.
+- **Browsers without the API** (Firefox) still show everyone else's captions,
+  with a note that their own voice is not captioned.
+
+### AI summaries
+
+Files: `backend/app/services/llm.py`, `backend/app/services/summary_service.py`,
+`backend/app/api/routes/summaries.py`, `frontend/src/components/recap/SummaryCard.tsx`.
+
+- **One client for several providers.** Groq and OpenAI accept the same Chat
+  Completions requests, so `OpenAICompatibleModel` uses the official `openai`
+  SDK with a configurable `base_url`. Switching provider is a settings change.
+  The rest of the app depends only on a small `JsonModel` protocol, which the
+  tests replace with a fake.
+- **Structured output.** The request includes a JSON Schema in strict mode, so
+  the provider makes the answer match it. The answer is still validated with
+  Pydantic (`SummaryContent`) before anything is saved; anything unexpected is
+  reported as a 502 and the old summary stays.
+- **Prompt injection.** The meeting's text was typed by participants, so the
+  instructions say to treat it only as material to summarise. The output is
+  shown as plain text, never as HTML.
+- **Fitting the limits.** Groq's free tier allows about 8,000 tokens a minute.
+  The record sent is capped (`LLM_MAX_INPUT_CHARS`, 16,000 by default):
+  agenda, notes and action items first, then the transcript and chat share the
+  rest; when too long, their start and end are kept and the middle is marked
+  as left out. The answer is capped at `LLM_MAX_OUTPUT_TOKENS`.
+- **Errors people understand.** A rate limit becomes "busy, try again in a
+  minute" (429), an unreachable or misconfigured provider "can't be reached"
+  (503, details only in the server log), and a cut-off or malformed answer
+  "something unexpected" (502).
+- **No double spending.** One request per meeting at a time, and 20 seconds
+  between requests, so double clicks cannot use up a free plan.
+- **Off without a key.** With no `LLM_API_KEY` the endpoint answers 404, the
+  recap says `summaries_enabled: false`, and the button is not shown. The tests
+  force the key empty so they can never call a real provider.
 
 ## Realtime layer
 
@@ -367,6 +444,8 @@ Each browser in a meeting opens one WebSocket:
 | `agenda_next`, `agenda_back`, `agenda_add` (host) | `agenda_updated` | Agenda |
 | `note_add`, `note_delete` | `note_added`, `note_deleted` | Shared notes |
 | `action_add`, `action_update`, `action_delete` | `action_item_saved`, `action_item_deleted` | Action items |
+| `captions_set` (host) | `captions_updated` | Live captions on or off |
+| `caption` | `caption` | Live caption text; finished lines are saved |
 
 The server closes a socket with a specific code when the session is over
 (removed, meeting ended, replaced by another tab), and the browser shows the

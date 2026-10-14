@@ -5,6 +5,7 @@ import { API_BASE_URL } from "./config";
 import type {
   Meeting,
   MeetingSession,
+  MeetingSummary,
   MyActionItem,
   Recap,
   ScheduleMeetingInput,
@@ -121,6 +122,8 @@ export const api = {
     key
       ? request<Recap>(`/meetings/${code}/recap?key=${encodeURIComponent(key)}`, SIGNED_OUT_OK)
       : request<Recap>(`/meetings/${code}/recap`),
+  /** Ask the AI provider for a summary. Takes a few seconds; host only. */
+  createSummary: (code: string) => post<MeetingSummary>(`/meetings/${code}/summary`),
   setActionItemDone: (id: number, done: boolean) =>
     request<MyActionItem>(`/action-items/${id}`, {
       method: "PATCH",

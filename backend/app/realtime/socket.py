@@ -54,6 +54,7 @@ async def meeting_socket(
                 # Everyone who attended may read the recap afterwards; the
                 # meeting-ended screen links to it with this key.
                 "recap_key": meeting.recap_key,
+                "captions_on": meeting.captions_on,
             }
     if participant is None:
         await websocket.close(code=CLOSE_INVALID_SESSION, reason="Invalid or expired session")

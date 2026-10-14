@@ -8,12 +8,14 @@ import { useEffect, useState } from "react";
 import { useToast } from "@/components/ui/Toast";
 import { useLocalMedia } from "@/hooks/useLocalMedia";
 import { useMeetingRoom } from "@/hooks/useMeetingRoom";
+import { useSpeechCaptions } from "@/hooks/useSpeechCaptions";
 import { copyToClipboard } from "@/lib/invitation";
 import { recapPath } from "@/lib/recap";
 import { clearSession, type StoredSession } from "@/lib/session";
 
 import { AgendaBar } from "./AgendaBar";
 import { AgendaPanel } from "./AgendaPanel";
+import { CaptionsOverlay } from "./CaptionsOverlay";
 import { ChatPanel } from "./ChatPanel";
 import { MeetingHeader } from "./MeetingHeader";
 import { NotesPanel } from "./NotesPanel";
@@ -60,6 +62,13 @@ export function MeetingRoom({ session }: { session: StoredSession }) {
   // Sound is blocked until the user clicks something (browser autoplay rule).
   const [soundBlocked, setSoundBlocked] = useState(false);
   const [soundRetryKey, setSoundRetryKey] = useState(0);
+  // A viewer can hide the caption text for themselves; the host's switch
+  // decides whether the room is captioned at all.
+  const [captionsHidden, setCaptionsHidden] = useState(false);
+  const speech = useSpeechCaptions({
+    active: room.captionsOn && media.audioOn && room.status === "connected",
+    send: room.sendCaption,
+  });
 
   const isChatOpen = activePanel === "chat";
   const unreadMessages = isChatOpen ? 0 : room.messages.length - room.readCount;
@@ -85,6 +94,17 @@ export function MeetingRoom({ session }: { session: StoredSession }) {
   async function copyInviteLink() {
     const copied = await copyToClipboard(meeting.join_url);
     showToast(copied ? "Invite link copied to clipboard" : "Couldn't copy the invite link");
+  }
+
+  function toggleCaptions() {
+    if (isHost) {
+      room.setCaptions(!room.captionsOn);
+      setCaptionsHidden(false);
+    } else if (!room.captionsOn) {
+      showToast("Only the host can turn on captions");
+    } else {
+      setCaptionsHidden((hidden) => !hidden);
+    }
   }
 
   function muteAll() {
@@ -142,7 +162,7 @@ export function MeetingRoom({ session }: { session: StoredSession }) {
 
   return (
     <div className="flex h-dvh flex-col bg-room">
-      <MeetingHeader meeting={meeting} status={room.status} />
+      <MeetingHeader meeting={meeting} status={room.status} captionsOn={room.captionsOn} />
       <AgendaBar
         agenda={room.agenda}
         clockOffsetMs={room.clockOffsetMs}
@@ -163,6 +183,16 @@ export function MeetingRoom({ session }: { session: StoredSession }) {
             retryKey={soundRetryKey}
             onAutoplayBlocked={() => setSoundBlocked(true)}
           />
+
+          {room.captionsOn && (
+            <CaptionsOverlay
+              captions={room.liveCaptions}
+              selfId={room.selfId}
+              hidden={captionsHidden}
+              supported={speech.supported}
+              problem={speech.problem}
+            />
+          )}
 
           {soundBlocked && (
             <button
@@ -234,6 +264,8 @@ export function MeetingRoom({ session }: { session: StoredSession }) {
         unreadMessages={unreadMessages}
         activePanel={activePanel}
         onTogglePanel={togglePanel}
+        captionsActive={room.captionsOn && !captionsHidden}
+        onToggleCaptions={toggleCaptions}
         onReact={room.sendReaction}
         onCopyInviteLink={copyInviteLink}
         onMuteAll={muteAll}

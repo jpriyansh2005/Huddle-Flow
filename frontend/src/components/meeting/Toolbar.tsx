@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Captions,
   Ellipsis,
   Hand,
   Link2,
@@ -42,6 +43,9 @@ type ToolbarProps = {
   unreadMessages: number;
   activePanel: SidePanel | null;
   onTogglePanel: (panel: SidePanel) => void;
+  /** Captions are showing for this viewer. */
+  captionsActive: boolean;
+  onToggleCaptions: () => void;
   onReact: (emoji: string) => void;
   onCopyInviteLink: () => void;
   onMuteAll: () => void;
@@ -60,6 +64,8 @@ export function Toolbar({
   unreadMessages,
   activePanel,
   onTogglePanel,
+  captionsActive,
+  onToggleCaptions,
   onReact,
   onCopyInviteLink,
   onMuteAll,
@@ -115,6 +121,14 @@ export function Toolbar({
             icon={NotebookPen}
             active={activePanel === "notes"}
             onClick={() => onTogglePanel("notes")}
+          />
+        </div>
+        <div className="hidden lg:block">
+          <ToolbarButton
+            label="Captions"
+            icon={Captions}
+            active={captionsActive}
+            onClick={onToggleCaptions}
           />
         </div>
 
@@ -235,6 +249,17 @@ export function Toolbar({
               >
                 <NotebookPen size={16} />
                 Notes
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onToggleCaptions();
+                  close();
+                }}
+                className={cn(MENU_ITEM_CLASS, "lg:hidden")}
+              >
+                <Captions size={16} />
+                {captionsActive ? "Hide captions" : "Show captions"}
               </button>
               {media.canShareScreen && (
                 <button

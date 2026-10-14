@@ -5,7 +5,7 @@ import secrets
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, ForeignKey, Index, String, Text, UniqueConstraint
+from sqlalchemy import CheckConstraint, ForeignKey, Index, String, Text, UniqueConstraint, false
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.time import utc_now
@@ -15,8 +15,10 @@ if TYPE_CHECKING:
     from app.models.action_item import ActionItem
     from app.models.agenda_item import AgendaItem
     from app.models.chat_message import ChatMessage
+    from app.models.meeting_summary import MeetingSummary
     from app.models.note import Note
     from app.models.participant import Participant
+    from app.models.transcript_line import TranscriptLine
     from app.models.user import User
 
 
@@ -75,6 +77,9 @@ class Meeting(Base):
         token_column(64), default=lambda: secrets.token_urlsafe(32)
     )
 
+    # Live captions, switched on and off by the host for the whole room.
+    captions_on: Mapped[bool] = mapped_column(default=False, server_default=false())
+
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utc_now, onupdate=utc_now)
 
@@ -99,6 +104,12 @@ class Meeting(Base):
     )
     chat_messages: Mapped[list[ChatMessage]] = relationship(
         back_populates="meeting", cascade="all, delete-orphan", order_by="ChatMessage.id"
+    )
+    transcript_lines: Mapped[list[TranscriptLine]] = relationship(
+        back_populates="meeting", cascade="all, delete-orphan", order_by="TranscriptLine.id"
+    )
+    summary: Mapped[MeetingSummary | None] = relationship(
+        back_populates="meeting", cascade="all, delete-orphan"
     )
 
     @property

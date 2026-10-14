@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 from app.schemas.meeting import MeetingOut
 from app.schemas.meeting_record import ActionItemOut, ChatMessageOut, NoteOut
+from app.schemas.summary import SummaryOut, TranscriptLineOut
 
 
 class AttendeeOut(BaseModel):
@@ -32,6 +33,12 @@ class RecapOut(BaseModel):
     chat: list[ChatMessageOut]
     # All messages sent, which can be more than the ones included in `chat`.
     chat_total: int
+    # What live captions saved, the latest lines, and how many there are in all.
+    transcript: list[TranscriptLineOut]
+    transcript_total: int
+    summary: SummaryOut | None
+    # Whether this server can write summaries (an LLM API key is configured).
+    summaries_enabled: bool
     viewer: RecapViewerOut
     # The link that lets anyone read this recap. Only the host receives it.
     share_url: str | None

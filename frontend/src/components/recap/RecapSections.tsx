@@ -9,7 +9,15 @@ import { useNow } from "@/hooks/useNow";
 import { cn } from "@/lib/cn";
 import { formatDueDate, formatDuration, formatTime, minutesBetween } from "@/lib/datetime";
 import { agendaReview, formatPresence, topicOutcome } from "@/lib/recap";
-import type { ActionItem, AgendaItem, Attendee, ChatMessage, Note, Recap } from "@/lib/types";
+import type {
+  ActionItem,
+  AgendaItem,
+  Attendee,
+  ChatMessage,
+  Note,
+  Recap,
+  TranscriptLine,
+} from "@/lib/types";
 
 /** The few numbers that say how the meeting went. */
 export function AtAGlanceCard({ recap }: { recap: Recap }) {
@@ -177,42 +185,97 @@ export function NotesCard({ notes }: { notes: Note[] }) {
   );
 }
 
-/** The chat, folded away by default because it is usually the longest part. */
-export function ChatCard({ messages, total }: { messages: ChatMessage[]; total: number }) {
+type LogEntry = { id: number; name: string; at: string; text: string };
+
+type LogCardProps = {
+  title: string;
+  titleId: string;
+  entries: LogEntry[];
+  total: number;
+  /** "message" or "line": used in "12 messages" and "Show the chat". */
+  noun: string;
+  thing: string;
+  empty: string;
+};
+
+/**
+ * A long, time-ordered record (chat, transcript), folded away by default
+ * because it is usually the longest part of the page.
+ */
+function LogCard({ title, titleId, entries, total, noun, thing, empty }: LogCardProps) {
   return (
     <Card
-      title="Chat"
-      titleId="recap-chat"
-      subtitle={total ? `${total} ${total === 1 ? "message" : "messages"}` : undefined}
+      title={title}
+      titleId={titleId}
+      subtitle={total ? `${total} ${total === 1 ? noun : `${noun}s`}` : undefined}
     >
-      {messages.length === 0 ? (
-        <Empty>No messages were sent in the chat.</Empty>
+      {entries.length === 0 ? (
+        <Empty>{empty}</Empty>
       ) : (
         <details className="group">
           <summary className="cursor-pointer list-none px-5 py-3 text-[13px] font-medium text-brand hover:bg-brand-soft/50 group-open:border-b group-open:border-line">
-            <span className="group-open:hidden">Show the chat</span>
-            <span className="hidden group-open:inline">Hide the chat</span>
+            <span className="group-open:hidden">Show the {thing}</span>
+            <span className="hidden group-open:inline">Hide the {thing}</span>
           </summary>
-          {total > messages.length && (
+          {total > entries.length && (
             <p className="px-5 pt-3 text-[12px] text-ink-muted">
-              Showing the latest {messages.length} of {total} messages.
+              Showing the latest {entries.length} of {total} {noun}s.
             </p>
           )}
           <ul className="space-y-2.5 px-5 py-3">
-            {messages.map((message) => (
-              <li key={message.id}>
+            {entries.map((entry) => (
+              <li key={entry.id}>
                 <p className="text-[12px] text-ink-muted">
-                  <span className="font-semibold text-ink">{message.sender_name}</span>
+                  <span className="font-semibold text-ink">{entry.name}</span>
                   {" · "}
-                  {formatTime(new Date(message.sent_at))}
+                  {formatTime(new Date(entry.at))}
                 </p>
-                <p className="text-sm break-words whitespace-pre-wrap text-ink">{message.text}</p>
+                <p className="text-sm break-words whitespace-pre-wrap text-ink">{entry.text}</p>
               </li>
             ))}
           </ul>
         </details>
       )}
     </Card>
+  );
+}
+
+export function ChatCard({ messages, total }: { messages: ChatMessage[]; total: number }) {
+  return (
+    <LogCard
+      title="Chat"
+      titleId="recap-chat"
+      noun="message"
+      thing="chat"
+      empty="No messages were sent in the chat."
+      total={total}
+      entries={messages.map((message) => ({
+        id: message.id,
+        name: message.sender_name,
+        at: message.sent_at,
+        text: message.text,
+      }))}
+    />
+  );
+}
+
+/** What live captions saved. Shown only for meetings that had captions on. */
+export function TranscriptCard({ lines, total }: { lines: TranscriptLine[]; total: number }) {
+  return (
+    <LogCard
+      title="Transcript"
+      titleId="recap-transcript"
+      noun="line"
+      thing="transcript"
+      empty="Nothing was captioned."
+      total={total}
+      entries={lines.map((line) => ({
+        id: line.id,
+        name: line.speaker_name,
+        at: line.spoken_at,
+        text: line.text,
+      }))}
+    />
   );
 }
 

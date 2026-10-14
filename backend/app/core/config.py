@@ -3,6 +3,7 @@
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # The backend/ folder. Paths are anchored here so the app behaves the same
@@ -54,6 +55,26 @@ class Settings(BaseSettings):
     demo_enabled: bool = True
     demo_user_name: str = "Alex Morgan"
     demo_user_email: str = "demo@huddleflow.app"
+
+    # AI meeting summaries, through any OpenAI-compatible API: Groq by default
+    # (it has a free tier). For OpenAI, set llm_base_url to an empty value and
+    # llm_model to an OpenAI model. The model must support JSON-schema output.
+    # Without a key the feature is off and its button is hidden.
+    llm_api_key: SecretStr | None = None
+    llm_base_url: str = "https://api.groq.com/openai/v1"
+    llm_model: str = "openai/gpt-oss-120b"
+    llm_timeout_seconds: float = 60
+    # How hard a reasoning model thinks before answering ("low", "medium",
+    # "high"). Leave empty for models without reasoning, which reject it.
+    llm_reasoning_effort: str = "low"
+    # Groq's free tier allows about 8,000 tokens a minute. These keep one
+    # summary (meeting text in, summary out) comfortably under that.
+    llm_max_input_chars: int = 16_000
+    llm_max_output_tokens: int = 2_048
+
+    @property
+    def summaries_enabled(self) -> bool:
+        return self.llm_api_key is not None and bool(self.llm_api_key.get_secret_value().strip())
 
     @property
     def cors_origins(self) -> list[str]:
