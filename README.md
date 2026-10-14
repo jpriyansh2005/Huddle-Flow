@@ -50,6 +50,12 @@ agenda, shared notes, action items and a recap. See the [roadmap](#roadmap).
 - An **Action items** page lists the tasks assigned to you and everything from meetings you hosted, with To do and Done tabs; tick items off there after the meeting
 - Anyone can add notes and tick items; a note or item can be removed by whoever added it, or by the host
 
+**Meeting recap**
+- One page per meeting (`/recap/{id}`): action items, the agenda's plan against what really happened, notes, the chat, and who attended for how long
+- When the host ends a meeting, everyone gets a **View the recap** button
+- The host and signed-in attendees open it from their account; the host can also copy a share link that works without an account
+- Previous meetings and the Action items page link to the recap; it prints cleanly or saves as a PDF
+
 **Meetings**
 - Instant meetings with a unique 11-digit meeting ID and an invite link (`/j/{id}`)
 - Join by ID or link; a display name is required, and unknown or ended meetings are refused
@@ -71,8 +77,8 @@ agenda, shared notes, action items and a recap. See the [roadmap](#roadmap).
 | 1 | Accounts: sign up, log in, MySQL in production, database migrations | Done |
 | 2 | Agenda with timers | Done |
 | 3 | Shared notes, action items and saved chat | Done |
-| 4 | Meeting recap page | Next |
-| 5 | Live captions and an AI summary | Planned |
+| 4 | Meeting recap page | Done |
+| 5 | Live captions and an AI summary | Next |
 
 ## Tech stack
 
@@ -244,6 +250,7 @@ running backend.
 | DELETE | `/meetings/{id}` | Delete a meeting |
 | POST | `/meetings/{id}/start` | Enter as the host |
 | POST | `/meetings/{id}/join` | Enter as a guest with a display name |
+| GET | `/meetings/{id}/recap?key=...` | The recap: for the host, signed-in attendees, or with the share key |
 | GET | `/action-items` | Your action items: assigned to you, or from meetings you hosted |
 | PATCH | `/action-items/{item_id}` | Tick an action item off or reopen it (its owner or the host) |
 | WS | `/ws/meetings/{id}?token=...` | The live room (presence, chat, host controls, agenda, notes, action items) |
@@ -276,7 +283,7 @@ erDiagram
   token is stored, with an expiry date.
 - A **meeting** has a public 11-digit `code`, a `kind` (instant or scheduled),
   a `status` (scheduled, live or ended), its planned time and its actual start
-  and end.
+  and end, and a random `recap_key` for the recap's share link.
 - An **agenda item** is one topic with its planned minutes, and the times it
   really started and ended. Its position in the agenda is unique per meeting.
 - A **participant** is one person's attendance in one meeting. `user_id` is
@@ -382,6 +389,8 @@ backend first, because the frontend needs its address.
 - **The meeting token travels in the WebSocket URL**, because browsers cannot
   set headers on WebSocket connections. It is a random, single-meeting token,
   not a password, but URLs can end up in server logs.
+- **A recap share link cannot be revoked yet.** Anyone who has it can read
+  that meeting's recap, the way an "anyone with the link" document works.
 
 ## Use of AI tools
 

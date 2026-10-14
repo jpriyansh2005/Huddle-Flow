@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 import {
@@ -10,6 +12,7 @@ import {
   minutesBetween,
 } from "@/lib/datetime";
 import { formatMeetingCode } from "@/lib/meetingCode";
+import { recapPath } from "@/lib/recap";
 import type { Meeting } from "@/lib/types";
 
 import { useDashboard } from "./DashboardProvider";
@@ -75,10 +78,16 @@ export function RecentMeetingRow({ meeting }: { meeting: Meeting }) {
         <Button size="sm" disabled={isLaunching} onClick={() => startMeeting(meeting)}>
           Rejoin
         </Button>
+      ) : meeting.started_at ? (
+        <Link
+          href={recapPath(meeting.code)}
+          aria-label={`Recap of ${meeting.title}`}
+          className="inline-flex h-8 shrink-0 items-center rounded-lg border border-field bg-white px-3 text-[13px] font-medium text-ink hover:bg-hover"
+        >
+          Recap
+        </Link>
       ) : (
-        <StatusChip tone="neutral">
-          {meeting.status === "ended" ? "Ended" : "Not started"}
-        </StatusChip>
+        <StatusChip tone="neutral">Not started</StatusChip>
       )}
       <MeetingActionsMenu meeting={meeting} />
     </li>

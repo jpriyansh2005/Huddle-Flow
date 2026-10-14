@@ -51,6 +51,8 @@ export function useMeetingRoom({ code, token, media }: UseMeetingRoomOptions) {
   const [agenda, setAgenda] = useState<AgendaItem[]>([]);
   // Server clock minus this browser's clock, so agenda timers agree.
   const [clockOffsetMs, setClockOffsetMs] = useState(0);
+  // Opens the meeting's recap; shown on the screen after the meeting ends.
+  const [recapKey, setRecapKey] = useState<string | null>(null);
 
   const socketRef = useRef<RoomSocket | null>(null);
   const meshRef = useRef<PeerMesh | null>(null);
@@ -73,6 +75,7 @@ export function useMeetingRoom({ code, token, media }: UseMeetingRoomOptions) {
         setMessages(event.chat);
         setReadCount(event.chat.length);
         setClockOffsetMs(clockOffset(event.server_time, Date.now()));
+        setRecapKey(event.recap_key);
         setStatus("connected");
         mesh?.closeAll();
         mesh?.setLocalTrack("audio", media.audioTrack);
@@ -204,6 +207,7 @@ export function useMeetingRoom({ code, token, media }: UseMeetingRoomOptions) {
     remoteStreams,
     agenda,
     clockOffsetMs,
+    recapKey,
     sendChat: (text: string) => send({ type: "chat", text }),
     sendReaction: (emoji: string) => send({ type: "reaction", emoji }),
     // Host controls. The server ignores them from anyone who is not the host.

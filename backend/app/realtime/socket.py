@@ -51,6 +51,9 @@ async def meeting_socket(
                     ChatMessageOut.model_validate(message).model_dump(mode="json")
                     for message in record_service.recent_chat(db, meeting.id)
                 ],
+                # Everyone who attended may read the recap afterwards; the
+                # meeting-ended screen links to it with this key.
+                "recap_key": meeting.recap_key,
             }
     if participant is None:
         await websocket.close(code=CLOSE_INVALID_SESSION, reason="Invalid or expired session")

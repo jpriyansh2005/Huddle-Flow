@@ -4,7 +4,9 @@ Routes stay thin: they read the request, call the service layer and shape
 the response. The rules themselves live in ``app/services``.
 """
 
-from fastapi import APIRouter, Response, status
+from typing import Annotated
+
+from fastapi import APIRouter, Query, Response, status
 
 from app.api.deps import CurrentUser, DbSession, OptionalUser
 from app.models import Participant, ParticipantRole
@@ -16,7 +18,8 @@ from app.schemas.meeting import (
     StartMeetingIn,
     UpdateMeetingIn,
 )
-from app.services import meeting_service, participant_service
+from app.schemas.recap import RecapOut
+from app.services import meeting_service, participant_service, recap_service
 
 router = APIRouter(prefix="/meetings", tags=["meetings"])
 
@@ -87,6 +90,18 @@ def join(code: str, data: JoinMeetingIn, db: DbSession, user: OptionalUser):
     meeting = meeting_service.get_meeting_by_code(db, code)
     participant = participant_service.join_meeting(db, meeting, data.display_name, user=user)
     return _session(participant)
+
+
+@router.get("/{code}/recap", response_model=RecapOut)
+def read_recap(
+    code: str,
+    db: DbSession,
+    user: OptionalUser,
+    key: Annotated[str | None, Query(max_length=128)] = None,
+):
+    """Everything the meeting produced. For the host, signed-in attendees, and
+    anyone with the share link (``?key=``)."""
+    return recap_service.get_recap(db, code, user, key)
 
 
 def _session(participant: Participant) -> SessionOut:

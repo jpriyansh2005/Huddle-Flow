@@ -1,6 +1,7 @@
 "use client";
 
 import { CircleCheckBig, ListTodo } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 import { useToast } from "@/components/ui/Toast";
@@ -9,6 +10,7 @@ import { useNow } from "@/hooks/useNow";
 import { api, errorMessage } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { formatDueDate, formatShortDate } from "@/lib/datetime";
+import { recapPath } from "@/lib/recap";
 import type { MyActionItem } from "@/lib/types";
 
 import { EmptyState, ErrorState, ListSkeleton } from "./ListStates";
@@ -163,9 +165,12 @@ function ActionItemRow({ item, saving, onDone }: ActionItemRowProps) {
               {due.text}
             </span>
           )}
-          <span className="min-w-0 truncate">
+          <Link
+            href={recapPath(item.meeting.code)}
+            className="min-w-0 truncate hover:text-brand hover:underline"
+          >
             {item.meeting.title} · {formatShortDate(new Date(meetingDay))}
-          </span>
+          </Link>
         </p>
       </div>
     </li>
