@@ -14,6 +14,7 @@ import { AgendaBar } from "./AgendaBar";
 import { AgendaPanel } from "./AgendaPanel";
 import { ChatPanel } from "./ChatPanel";
 import { MeetingHeader } from "./MeetingHeader";
+import { NotesPanel } from "./NotesPanel";
 import { ParticipantsPanel } from "./ParticipantsPanel";
 import { RoomNotice } from "./RoomNotice";
 import { type SidePanel, Toolbar } from "./Toolbar";
@@ -51,14 +52,12 @@ export function MeetingRoom({ session }: { session: StoredSession }) {
   const room = useMeetingRoom({ code: meeting.code, token: session.session_token, media });
 
   const [activePanel, setActivePanel] = useState<SidePanel | null>(null);
-  // How many chat messages had arrived when the chat was last looked at.
-  const [seenMessages, setSeenMessages] = useState(0);
   // Sound is blocked until the user clicks something (browser autoplay rule).
   const [soundBlocked, setSoundBlocked] = useState(false);
   const [soundRetryKey, setSoundRetryKey] = useState(0);
 
   const isChatOpen = activePanel === "chat";
-  const unreadMessages = isChatOpen ? 0 : room.messages.length - seenMessages;
+  const unreadMessages = isChatOpen ? 0 : room.messages.length - room.readCount;
 
   // Device problems (permission denied, no camera) appear as a toast.
   const { error: mediaError, clearError: clearMediaError } = media;
@@ -68,9 +67,14 @@ export function MeetingRoom({ session }: { session: StoredSession }) {
     clearMediaError();
   }, [mediaError, clearMediaError, showToast]);
 
+  /** Open a side panel (or none). Leaving or opening the chat marks it read. */
+  function showPanel(panel: SidePanel | null) {
+    if (panel === "chat" || activePanel === "chat") room.markChatRead(room.messages.length);
+    setActivePanel(panel);
+  }
+
   function togglePanel(panel: SidePanel) {
-    setSeenMessages(room.messages.length); // opening or closing chat marks it read
-    setActivePanel((current) => (current === panel ? null : panel));
+    showPanel(activePanel === panel ? null : panel);
   }
 
   async function copyInviteLink() {
@@ -113,7 +117,7 @@ export function MeetingRoom({ session }: { session: StoredSession }) {
         isHost={isHost}
         onNext={room.agendaNext}
         onBack={room.agendaBack}
-        onOpenAgenda={() => setActivePanel("agenda")}
+        onOpenAgenda={() => showPanel("agenda")}
       />
 
       <div className="flex min-h-0 flex-1 gap-2 p-2">
@@ -150,7 +154,7 @@ export function MeetingRoom({ session }: { session: StoredSession }) {
             selfAudioOn={media.audioOn}
             selfVideoOn={media.videoOn}
             isHost={isHost}
-            onClose={() => setActivePanel(null)}
+            onClose={() => showPanel(null)}
             onInvite={copyInviteLink}
             onMuteAll={muteAll}
             onMute={room.muteParticipant}
@@ -163,7 +167,22 @@ export function MeetingRoom({ session }: { session: StoredSession }) {
             clockOffsetMs={room.clockOffsetMs}
             isHost={isHost}
             onAdd={room.agendaAdd}
-            onClose={() => setActivePanel(null)}
+            onClose={() => showPanel(null)}
+          />
+        )}
+        {activePanel === "notes" && (
+          <NotesPanel
+            notes={room.notes}
+            actionItems={room.actionItems}
+            participants={room.participants}
+            selfId={room.selfId}
+            isHost={isHost}
+            onAddNote={room.addNote}
+            onDeleteNote={room.deleteNote}
+            onAddActionItem={room.addActionItem}
+            onToggleActionItem={(id, done) => room.updateActionItem(id, { done })}
+            onDeleteActionItem={room.deleteActionItem}
+            onClose={() => showPanel(null)}
           />
         )}
         {isChatOpen && (

@@ -43,6 +43,13 @@ agenda, shared notes, action items and a recap. See the [roadmap](#roadmap).
 - Timers use the server's clock, so they agree even when a participant's computer clock is wrong
 - Progress is saved, so a refresh or reconnect keeps it, and the actual time of each topic is recorded
 
+**Notes and action items**
+- A Notes panel in the meeting, shared by everyone: write down decisions as they happen
+- Action items with an owner picked from the people in the meeting, an optional due date and a done tick
+- Everything is saved with the meeting, and so is the chat, so late joiners and refreshes see the history
+- An **Action items** page lists the tasks assigned to you and everything from meetings you hosted, with To do and Done tabs; tick items off there after the meeting
+- Anyone can add notes and tick items; a note or item can be removed by whoever added it, or by the host
+
 **Meetings**
 - Instant meetings with a unique 11-digit meeting ID and an invite link (`/j/{id}`)
 - Join by ID or link; a display name is required, and unknown or ended meetings are refused
@@ -63,8 +70,8 @@ agenda, shared notes, action items and a recap. See the [roadmap](#roadmap).
 | 0 | HuddleFlow brand: name, logo, colours, layout | Done |
 | 1 | Accounts: sign up, log in, MySQL in production, database migrations | Done |
 | 2 | Agenda with timers | Done |
-| 3 | Shared notes, action items and saved chat | Next |
-| 4 | Meeting recap page | Planned |
+| 3 | Shared notes, action items and saved chat | Done |
+| 4 | Meeting recap page | Next |
 | 5 | Live captions and an AI summary | Planned |
 
 ## Tech stack
@@ -237,7 +244,9 @@ running backend.
 | DELETE | `/meetings/{id}` | Delete a meeting |
 | POST | `/meetings/{id}/start` | Enter as the host |
 | POST | `/meetings/{id}/join` | Enter as a guest with a display name |
-| WS | `/ws/meetings/{id}?token=...` | The live room (presence, chat, host controls, agenda) |
+| GET | `/action-items` | Your action items: assigned to you, or from meetings you hosted |
+| PATCH | `/action-items/{item_id}` | Tick an action item off or reopen it (its owner or the host) |
+| WS | `/ws/meetings/{id}?token=...` | The live room (presence, chat, host controls, agenda, notes, action items) |
 
 `{id}` is the 11-digit meeting ID. It may be sent with or without spaces.
 Meeting routes need a signed-in user, except looking a meeting up and joining
@@ -245,8 +254,8 @@ it, which guests do.
 
 ## Database
 
-Five tables: `users`, `user_sessions`, `meetings`, `participants` and
-`agenda_items`.
+Eight tables: `users`, `user_sessions`, `meetings`, `participants`,
+`agenda_items`, `notes`, `action_items` and `chat_messages`.
 
 ```mermaid
 erDiagram
@@ -254,7 +263,11 @@ erDiagram
     USERS ||--o{ MEETINGS : hosts
     MEETINGS ||--o{ PARTICIPANTS : has
     MEETINGS ||--o{ AGENDA_ITEMS : plans
+    MEETINGS ||--o{ NOTES : records
+    MEETINGS ||--o{ ACTION_ITEMS : produces
+    MEETINGS ||--o{ CHAT_MESSAGES : keeps
     USERS |o--o{ PARTICIPANTS : "attends as (optional)"
+    USERS |o--o{ ACTION_ITEMS : "owns (optional)"
 ```
 
 - A **user** has an email (unique, stored in lower case) and an Argon2
@@ -268,6 +281,9 @@ erDiagram
   really started and ended. Its position in the agenda is unique per meeting.
 - A **participant** is one person's attendance in one meeting. `user_id` is
   empty for guests, who join with only a display name.
+- A **note**, an **action item** and a **chat message** belong to a meeting
+  and remember who wrote them. An action item's owner is linked to their
+  account when they have one, which is what puts it on their Action items page.
 
 The full schema, the reasons behind it, and how the realtime and video parts
 work are in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
@@ -347,7 +363,8 @@ backend first, because the frontend needs its address.
 - **An instant meeting ends** one minute after the last person leaves. A
   scheduled meeting stays open until its host ends it.
 - **Times are stored in UTC** and shown in each viewer's own timezone.
-- **Chat and reactions are not saved yet**; they last as long as the meeting.
+- **Chat is saved** with the meeting; a browser receives the latest 200
+  messages when it joins. **Reactions are not saved**; they are only a moment.
 - **Meeting passcodes and waiting rooms are out of scope.**
 
 ## Known limitations

@@ -15,10 +15,13 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.core.time import utc_now
 from app.models import (
+    ActionItem,
     AgendaItem,
+    ChatMessage,
     Meeting,
     MeetingKind,
     MeetingStatus,
+    Note,
     Participant,
     ParticipantRole,
     User,
@@ -74,6 +77,31 @@ RECENT_AGENDAS = {
         ("Estimate and commit", 20, 15),
     ],
     "Engineering All Hands": [("Company update", 15, 18), ("Demos", 30, 32), ("Q&A", 15, 12)],
+}
+
+# What past meetings produced. Action items owned by "host" go to the demo
+# account; others to the named guest. (text, owner, due in days or None, done)
+RECENT_RECORDS = {
+    "Sprint Planning": {
+        "notes": [
+            ("Priya Sharma", "Velocity last sprint: 34 points, two stories carried over."),
+            ("Daniel Kim", "Payments work is blocked until the API keys arrive."),
+        ],
+        "action_items": [
+            ("Chase the payments API keys", "host", 1, False),
+            ("Split the onboarding story into two", "Priya Sharma", 3, False),
+            ("Share the sprint board link", "host", None, True),
+        ],
+        "chat": [
+            ("Priya Sharma", "Board is up to date"),
+            ("Daniel Kim", "Thanks, looks good"),
+        ],
+    },
+    "Engineering All Hands": {
+        "notes": [("Wei Chen", "New on-call rota starts next Monday.")],
+        "action_items": [("Write the incident review", "host", 5, False)],
+        "chat": [("Wei Chen", "Slides are in the shared drive")],
+    },
 }
 
 # (title, ended how long ago, length in minutes, guests who attended)
@@ -142,6 +170,7 @@ def seed_database(db: Session) -> bool:
         meeting.agenda_items = _past_agenda(RECENT_AGENDAS.get(title, []), started_at)
         db.add(meeting)
         db.flush()
+        _add_records(db, meeting, host, RECENT_RECORDS.get(title), ended_at)
 
     db.commit()
     return True
@@ -180,6 +209,50 @@ def _past_agenda(items: list[tuple[str, int, int]], start: datetime) -> list[Age
         )
         start = end
     return agenda
+
+
+def _add_records(
+    db: Session, meeting: Meeting, host: User, records: dict | None, ended_at: datetime
+) -> None:
+    """Notes, action items and chat for a past meeting, written by its attendees."""
+    if not records:
+        return
+    by_name = {participant.display_name: participant for participant in meeting.participants}
+    written_at = ended_at - timedelta(minutes=10)
+    for author, text in records["notes"]:
+        db.add(
+            Note(
+                meeting=meeting,
+                author_participant_id=by_name[author].id,
+                author_name=author,
+                text=text,
+                created_at=written_at,
+            )
+        )
+    for text, owner, due_in, done in records["action_items"]:
+        owner_is_host = owner == "host"
+        db.add(
+            ActionItem(
+                meeting=meeting,
+                text=text,
+                owner_name=host.name if owner_is_host else owner,
+                owner_user_id=host.id if owner_is_host else None,
+                due_date=(ended_at + timedelta(days=due_in)).date() if due_in else None,
+                done=done,
+                created_by_participant_id=by_name[host.name].id,
+                created_at=written_at,
+            )
+        )
+    for sender, text in records["chat"]:
+        db.add(
+            ChatMessage(
+                meeting=meeting,
+                participant_id=by_name[sender].id,
+                sender_name=sender,
+                text=text,
+                sent_at=written_at,
+            )
+        )
 
 
 def _round_up_to_half_hour(moment: datetime) -> datetime:

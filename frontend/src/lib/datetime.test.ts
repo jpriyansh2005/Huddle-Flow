@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   formatDayLabel,
+  formatDueDate,
   formatDuration,
   formatElapsed,
   formatTimeRange,
@@ -94,5 +95,16 @@ describe("greeting", () => {
     expect(greeting(new Date(2026, 9, 9, 12, 0))).toBe("Good afternoon");
     expect(greeting(new Date(2026, 9, 9, 17, 59))).toBe("Good afternoon");
     expect(greeting(new Date(2026, 9, 9, 18, 0))).toBe("Good evening");
+  });
+});
+
+describe("formatDueDate", () => {
+  it.each([
+    ["2026-10-09", "Due today", false],
+    ["2026-10-10", "Due tomorrow", false],
+    ["2026-10-20", "Due Oct 20", false],
+    ["2026-10-08", "Overdue: Oct 8", true],
+  ])("reads %s as %s", (day, text, overdue) => {
+    expect(formatDueDate(day, NOW)).toEqual({ text, overdue });
   });
 });

@@ -137,3 +137,20 @@ export function addDays(date: Date, days: number): Date {
   result.setDate(result.getDate() + days);
   return result;
 }
+
+export type DueLabel = { text: string; overdue: boolean };
+
+/**
+ * How a due date reads next to an action item: "Due today", "Due tomorrow",
+ * "Due Oct 20", or "Overdue: Oct 12". `day` is a calendar day ("2026-10-20")
+ * with no time zone, so it is read as that day wherever the viewer is.
+ */
+export function formatDueDate(day: string, now: Date = new Date()): DueLabel {
+  const due = fromDateAndTimeInputs(day, "00:00");
+  const difference = Math.round((due.getTime() - startOfDay(now).getTime()) / DAY_MS);
+  const short = due.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  if (difference < 0) return { text: `Overdue: ${short}`, overdue: true };
+  if (difference === 0) return { text: "Due today", overdue: false };
+  if (difference === 1) return { text: "Due tomorrow", overdue: false };
+  return { text: `Due ${short}`, overdue: false };
+}

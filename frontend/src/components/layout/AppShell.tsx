@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, House, LogOut, type LucideIcon, Plus } from "lucide-react";
+import { CalendarDays, House, ListTodo, LogOut, type LucideIcon, Plus } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -20,6 +20,7 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { label: "Home", icon: House, href: "/" },
   { label: "Meetings", icon: CalendarDays, href: "/meetings" },
+  { label: "Action items", icon: ListTodo, href: "/action-items" },
 ];
 
 /** The item whose page is open: an exact match, or the section the path is in. */
@@ -128,7 +129,7 @@ function NavLinks({ pathname, variant }: { pathname: string; variant: "rail" | "
         href={href}
         aria-current={isActive ? "page" : undefined}
         className={cn(
-          "flex flex-col items-center justify-center gap-1 rounded-xl text-[11px] font-medium transition-colors",
+          "flex flex-col items-center justify-center gap-1 rounded-xl text-center text-[11px] leading-tight font-medium transition-colors",
           variant === "rail"
             ? cn(
                 "h-[58px] w-[62px]",

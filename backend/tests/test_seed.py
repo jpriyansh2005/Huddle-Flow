@@ -1,7 +1,7 @@
 from sqlalchemy import func, select
 
 from app.db.seed import RECENT, UPCOMING, seed_database
-from app.models import Meeting, Participant
+from app.models import Meeting, Note, Participant
 from tests.conftest import API
 
 
@@ -24,3 +24,14 @@ def test_seed_does_nothing_when_meetings_already_exist(db):
 
     assert seed_database(db) is False
     assert db.scalar(select(func.count()).select_from(Meeting)) == count
+
+
+def test_the_demo_account_has_action_items_from_its_past_meetings(anon_client, db):
+    seed_database(db)
+    anon_client.post(f"{API}/auth/demo")
+
+    items = anon_client.get(f"{API}/action-items").json()
+
+    assert any(item["assigned_to_me"] and not item["done"] for item in items)
+    assert any(item["done"] for item in items)
+    assert db.scalar(select(func.count()).select_from(Note)) > 0

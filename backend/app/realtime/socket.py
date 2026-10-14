@@ -12,9 +12,13 @@ from app.core.exceptions import MeetingNotFoundError
 from app.core.time import utc_now
 from app.db.session import get_session_factory
 from app.models import MeetingKind, MeetingStatus
-from app.realtime.events import EVENT_HANDLERS, EventContext, agenda_snapshot
+from app.realtime.agenda_events import agenda_snapshot
+from app.realtime.context import EventContext
+from app.realtime.events import EVENT_HANDLERS
+from app.realtime.record_events import action_items_snapshot, notes_snapshot
 from app.realtime.rooms import CLOSE_INVALID_SESSION, CLOSE_REPLACED, Connection, rooms
-from app.services import meeting_service, participant_service
+from app.schemas.meeting_record import ChatMessageOut
+from app.services import meeting_service, participant_service, record_service
 
 router = APIRouter()
 
@@ -35,7 +39,19 @@ async def meeting_socket(
         participant = participant_service.get_active_session(db, code, token)
         if participant is not None:
             participant_service.mark_connected(db, participant.id)
-            agenda = agenda_snapshot(participant.meeting)
+            # Everything the meeting has so far, so a newcomer or a refreshed
+            # page starts from the same picture as everyone else.
+            meeting = participant.meeting
+            meeting_id = meeting.id
+            record = {
+                "agenda": agenda_snapshot(meeting),
+                "notes": notes_snapshot(meeting),
+                "action_items": action_items_snapshot(meeting),
+                "chat": [
+                    ChatMessageOut.model_validate(message).model_dump(mode="json")
+                    for message in record_service.recent_chat(db, meeting.id)
+                ],
+            }
     if participant is None:
         await websocket.close(code=CLOSE_INVALID_SESSION, reason="Invalid or expired session")
         return
@@ -57,7 +73,7 @@ async def meeting_socket(
             "type": "room_state",
             "self_id": connection.participant_id,
             "participants": [member.to_public() for member in rooms.connections(code)],
-            "agenda": agenda,
+            **record,
             "server_time": utc_now().isoformat(),
         },
     )
@@ -68,7 +84,11 @@ async def meeting_socket(
     )
 
     context = EventContext(
-        code=code, sender=connection, rooms=rooms, session_factory=session_factory
+        code=code,
+        meeting_id=meeting_id,
+        sender=connection,
+        rooms=rooms,
+        session_factory=session_factory,
     )
     try:
         # A handler can close this socket itself (the host ending the meeting),

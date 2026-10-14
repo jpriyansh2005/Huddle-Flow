@@ -7,7 +7,7 @@ from fastapi import APIRouter, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.routes import auth, health, meetings
+from app.api.routes import action_items, auth, health, meetings
 from app.api.routes.auth import clear_session_cookie
 from app.core.config import get_settings
 from app.core.exceptions import DomainError, NotAuthenticatedError
@@ -64,6 +64,7 @@ def create_app() -> FastAPI:
     api.include_router(health.router)
     api.include_router(auth.router)
     api.include_router(meetings.router)
+    api.include_router(action_items.router)
     app.include_router(api)
     app.include_router(socket.router)
 
