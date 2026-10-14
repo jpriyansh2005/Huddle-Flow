@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { formatMeetingCode, parseMeetingInput } from "./meetingCode";
 
 describe("formatMeetingCode", () => {
-  it("groups an 11-digit ID as 3-4-4, like Zoom", () => {
+  it("groups an 11-digit ID as 3-4-4", () => {
     expect(formatMeetingCode("86412345678")).toBe("864 1234 5678");
   });
 
@@ -19,7 +19,7 @@ describe("parseMeetingInput", () => {
     ["864-1234-5678", "an ID with dashes"],
     ["  86412345678 ", "an ID with surrounding spaces"],
     ["http://localhost:3000/j/86412345678", "an invite link"],
-    ["https://zoom-clone.vercel.app/j/86412345678?from=email", "an invite link with a query"],
+    ["https://huddleflow.vercel.app/j/86412345678?from=email", "an invite link with a query"],
   ])("reads the ID from %s (%s)", (input) => {
     expect(parseMeetingInput(input)).toBe("86412345678");
   });

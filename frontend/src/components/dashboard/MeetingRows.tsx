@@ -15,7 +15,10 @@ import type { Meeting } from "@/lib/types";
 import { useDashboard } from "./DashboardProvider";
 import { MeetingActionsMenu } from "./MeetingActionsMenu";
 
-const ROW_CLASS = "flex items-center gap-2.5 px-4 py-2.5 transition-colors hover:bg-hover/70";
+const ROW_CLASS = "flex items-center gap-3 px-5 py-2.5 transition-colors hover:bg-hover/70";
+
+/** The thin bar at the start of a row: teal while live, indigo when planned, grey when over. */
+const BAR_CLASS = "h-10 w-1 shrink-0 rounded-full";
 
 /** A scheduled meeting that has not finished: time, topic, ID and "Start". */
 export function UpcomingMeetingRow({ meeting }: { meeting: Meeting }) {
@@ -26,6 +29,7 @@ export function UpcomingMeetingRow({ meeting }: { meeting: Meeting }) {
 
   return (
     <li className={ROW_CLASS}>
+      <span aria-hidden className={cn(BAR_CLASS, isLive ? "bg-accent" : "bg-brand")} />
       <div className="min-w-0 flex-1">
         <p className="flex items-center gap-2 text-[12px] text-ink-muted">
           {formatTimeRange(start, meeting.duration_minutes ?? 0)}
@@ -52,6 +56,7 @@ export function RecentMeetingRow({ meeting }: { meeting: Meeting }) {
 
   return (
     <li className={ROW_CLASS}>
+      <span aria-hidden className={cn(BAR_CLASS, isLive ? "bg-accent" : "bg-line")} />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold">{meeting.title}</p>
         <p className="truncate text-[12px] text-ink-muted">
@@ -88,7 +93,7 @@ function StatusChip({ tone, children }: { tone: "live" | "neutral"; children: Re
     <span
       className={cn(
         "rounded-full px-2 py-0.5 text-[11px] leading-4 font-medium whitespace-nowrap",
-        tone === "live" ? "bg-zoom-green/15 text-[#0f8a48]" : "bg-canvas text-ink-muted",
+        tone === "live" ? "bg-accent-soft text-accent-ink" : "bg-hover text-ink-muted",
       )}
     >
       {children}

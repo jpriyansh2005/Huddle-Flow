@@ -27,40 +27,36 @@ export function MeetingsView() {
   const activeTab: TabId = useSearchParams().get("tab") === "previous" ? "previous" : "upcoming";
 
   return (
-    <div className="pt-8">
-      <div className="mb-5 flex items-center justify-between gap-3">
-        <h1 className="text-xl font-bold">Meetings</h1>
+    <div>
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div role="tablist" aria-label="Meetings" className="flex rounded-xl bg-[#e9edf5] p-1">
+          {TABS.map((tab) => {
+            const count = tab.id === "upcoming" ? upcoming.length : recent.length;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                onClick={() => router.replace(tab.id === "upcoming" ? "/meetings" : "/meetings?tab=previous")}
+                className={cn(
+                  "h-8 rounded-lg px-4 text-sm font-medium transition-colors",
+                  activeTab === tab.id ? "bg-white text-navy shadow-card" : "text-ink-muted hover:text-ink",
+                )}
+              >
+                {tab.label}
+                {!loading && <span className="ml-1.5 text-ink-faint">{count}</span>}
+              </button>
+            );
+          })}
+        </div>
         <Button onClick={() => openScheduleDialog()}>
           <Plus size={16} strokeWidth={2.5} />
           Schedule a meeting
         </Button>
       </div>
 
-      <div role="tablist" aria-label="Meetings" className="flex gap-6 border-b border-line">
-        {TABS.map((tab) => {
-          const count = tab.id === "upcoming" ? upcoming.length : recent.length;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              role="tab"
-              aria-selected={activeTab === tab.id}
-              onClick={() => router.replace(tab.id === "upcoming" ? "/meetings" : "/meetings?tab=previous")}
-              className={cn(
-                "-mb-px border-b-2 px-0.5 pb-2 text-sm font-semibold transition-colors",
-                activeTab === tab.id
-                  ? "border-zoom-blue text-zoom-blue"
-                  : "border-transparent text-ink-muted hover:text-ink",
-              )}
-            >
-              {tab.label}
-              {!loading && <span className="ml-1.5 font-normal">({count})</span>}
-            </button>
-          );
-        })}
-      </div>
-
-      <section className="mt-4 rounded-lg border border-line">
+      <section className="rounded-2xl border border-line bg-white shadow-card">
         {activeTab === "previous" ? (
           <RecentMeetings />
         ) : error && upcoming.length === 0 ? (
@@ -77,7 +73,7 @@ export function MeetingsView() {
           <div className="py-2">
             {groupByDay(upcoming).map((group) => (
               <div key={group.day}>
-                <h2 className="px-4 pt-3 pb-0.5 text-[12px] text-ink-muted">
+                <h2 className="px-5 pt-3 pb-1 text-[12px] font-medium text-ink-muted">
                   {group.day}
                 </h2>
                 <ul>

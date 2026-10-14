@@ -29,7 +29,7 @@ def create_instant_meeting(db: Session, host: User) -> Meeting:
     meeting = Meeting(
         code=generate_meeting_code(db),
         host=host,
-        title=f"{host.name}'s Zoom Meeting",
+        title=f"{host.name}'s huddle",
         kind=MeetingKind.INSTANT,
         status=MeetingStatus.LIVE,
         started_at=now,

@@ -6,6 +6,7 @@ import {
   formatElapsed,
   formatTimeRange,
   fromDateAndTimeInputs,
+  greeting,
   minutesBetween,
   nextHalfHour,
   toDateInputValue,
@@ -83,5 +84,15 @@ describe("nextHalfHour", () => {
 
   it("moves a time already on the half hour to the following one", () => {
     expect(toTimeInputValue(nextHalfHour(new Date(2026, 9, 9, 14, 30)))).toBe("15:00");
+  });
+});
+
+describe("greeting", () => {
+  it("changes at noon and at 6 PM", () => {
+    expect(greeting(new Date(2026, 9, 9, 0, 0))).toBe("Good morning");
+    expect(greeting(new Date(2026, 9, 9, 11, 59))).toBe("Good morning");
+    expect(greeting(new Date(2026, 9, 9, 12, 0))).toBe("Good afternoon");
+    expect(greeting(new Date(2026, 9, 9, 17, 59))).toBe("Good afternoon");
+    expect(greeting(new Date(2026, 9, 9, 18, 0))).toBe("Good evening");
   });
 });

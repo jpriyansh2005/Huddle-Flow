@@ -1,20 +1,21 @@
 "use client";
 
 import {
-  ChevronUp,
   Ellipsis,
-  Heart,
+  Hand,
   Link2,
   type LucideIcon,
   MessageSquare,
   Mic,
   MicOff,
+  MonitorUp,
+  PhoneOff,
   ShieldHalf,
-  SquareArrowUp,
+  SmilePlus,
   UsersRound,
   Video,
+  VideoOff,
 } from "lucide-react";
-import type { ReactNode } from "react";
 
 import { Popover } from "@/components/ui/Popover";
 import type { LocalMedia } from "@/hooks/useLocalMedia";
@@ -25,11 +26,11 @@ export type SidePanel = "participants" | "chat";
 /** Must match ALLOWED_REACTIONS in backend/app/realtime/events.py. */
 const REACTIONS = ["👏", "👍", "❤️", "😂", "😮", "🎉"];
 
+/** The clickable area of a control: the round face with its label underneath. */
 const BUTTON_CLASS =
-  "group relative flex h-[58px] w-12 flex-col items-center justify-center gap-1.5 rounded-lg " +
-  "text-white transition-colors hover:bg-room-hover sm:w-[72px]";
+  "group flex w-14 flex-col items-center gap-1 rounded-xl py-1 text-room-text sm:w-[68px]";
 const MENU_CLASS =
-  "rounded-xl border border-room-line bg-[#1f2124] text-[13px] text-room-text shadow-popover";
+  "rounded-xl border border-room-line bg-room-tile text-[13px] text-room-text shadow-popover";
 const MENU_ITEM_CLASS = "flex w-full items-center gap-2.5 px-4 py-2 text-left hover:bg-room-hover";
 
 type ToolbarProps = {
@@ -47,7 +48,7 @@ type ToolbarProps = {
 };
 
 /**
- * The control bar along the bottom of a Zoom meeting: Audio and Video on
+ * The control bar along the bottom of a meeting: microphone and camera on
  * the left, the meeting tools in the middle, End on the right.
  */
 export function Toolbar({
@@ -64,32 +65,29 @@ export function Toolbar({
   onEndForAll,
 }: ToolbarProps) {
   return (
-    <footer className="flex h-[70px] shrink-0 items-center justify-between gap-1 bg-room-bar px-2 pb-[env(safe-area-inset-bottom)] sm:px-4">
+    <footer className="flex h-[76px] shrink-0 items-center justify-between gap-1 bg-room-bar px-2 pb-[env(safe-area-inset-bottom)] sm:px-5">
       <div className="flex items-center">
         <ToolbarButton
-          label="Audio"
-          actionLabel={media.audioOn ? "Mute" : "Unmute"}
+          label={media.audioOn ? "Mute" : "Unmute"}
           icon={Mic}
-          slashed={!media.audioOn}
-          hasCaret
+          offIcon={MicOff}
+          off={!media.audioOn}
           onClick={media.toggleAudio}
         />
         <ToolbarButton
-          label="Video"
-          actionLabel={media.videoOn ? "Stop video" : "Start video"}
+          label={media.videoOn ? "Stop video" : "Start video"}
           icon={Video}
-          slashed={!media.videoOn}
-          hasCaret
+          offIcon={VideoOff}
+          off={!media.videoOn}
           onClick={media.toggleVideo}
         />
       </div>
 
       <div className="flex items-center">
         <ToolbarButton
-          label="Participants"
+          label="People"
           icon={UsersRound}
           count={participantCount}
-          hasCaret
           active={activePanel === "participants"}
           onClick={() => onTogglePanel("participants")}
         />
@@ -97,7 +95,6 @@ export function Toolbar({
           label="Chat"
           icon={MessageSquare}
           unread={unreadMessages}
-          hasCaret
           active={activePanel === "chat"}
           onClick={() => onTogglePanel("chat")}
         />
@@ -106,7 +103,7 @@ export function Toolbar({
           label="Reactions"
           placement="top"
           triggerClassName={BUTTON_CLASS}
-          trigger={<ButtonFace label="React" icon={Heart} hasCaret />}
+          trigger={<ButtonFace label="React" icon={SmilePlus} />}
         >
           {(close) => (
             <div className={cn(MENU_CLASS, "flex gap-1 p-1.5")}>
@@ -132,10 +129,8 @@ export function Toolbar({
           // On phones Share and Host tools move into the "More" menu.
           <div className="hidden sm:block">
             <ToolbarButton
-              label="Share"
-              actionLabel={media.isSharingScreen ? "Stop share" : "Share"}
-              icon={SquareArrowUp}
-              hasCaret
+              label={media.isSharingScreen ? "Stop share" : "Share"}
+              icon={MonitorUp}
               active={media.isSharingScreen}
               onClick={media.toggleScreenShare}
             />
@@ -148,7 +143,7 @@ export function Toolbar({
               label="Host tools"
               placement="top"
               triggerClassName={BUTTON_CLASS}
-              trigger={<ButtonFace label="Host tools" icon={ShieldHalf} />}
+              trigger={<ButtonFace label="Host" icon={ShieldHalf} />}
             >
               {(close) => (
                 <div className={cn(MENU_CLASS, "w-56 py-1.5")}>
@@ -171,7 +166,7 @@ export function Toolbar({
                     }}
                     className={MENU_ITEM_CLASS}
                   >
-                    <UsersRound size={16} />
+                    <Hand size={16} />
                     Manage participants
                   </button>
                 </div>
@@ -209,7 +204,7 @@ export function Toolbar({
                   }}
                   className={cn(MENU_ITEM_CLASS, "sm:hidden")}
                 >
-                  <SquareArrowUp size={16} />
+                  <MonitorUp size={16} />
                   {media.isSharingScreen ? "Stop sharing" : "Share screen"}
                 </button>
               )}
@@ -235,13 +230,11 @@ export function Toolbar({
         label={isHost ? "End meeting" : "Leave meeting"}
         placement="top"
         align="end"
-        triggerClassName={BUTTON_CLASS}
+        triggerClassName="flex h-11 items-center gap-2 rounded-full bg-danger px-4 text-sm font-medium text-white transition-colors hover:bg-danger-hover sm:px-5"
         trigger={
           <>
-            <EndIcon />
-            <span className="hidden text-[13px] leading-none text-room-muted sm:block">
-              {isHost ? "End" : "Leave"}
-            </span>
+            <PhoneOff size={18} />
+            <span className="hidden sm:inline">{isHost ? "End" : "Leave"}</span>
           </>
         }
       >
@@ -251,7 +244,7 @@ export function Toolbar({
               <button
                 type="button"
                 onClick={onEndForAll}
-                className="h-9 rounded-lg bg-zoom-red text-sm font-semibold text-white hover:bg-zoom-red-hover"
+                className="h-9 rounded-lg bg-danger text-sm font-semibold text-white hover:bg-danger-hover"
               >
                 End meeting for all
               </button>
@@ -263,7 +256,7 @@ export function Toolbar({
                 "h-9 rounded-lg text-sm font-semibold",
                 isHost
                   ? "bg-room-hover text-room-text hover:bg-room-line"
-                  : "bg-zoom-red text-white hover:bg-zoom-red-hover",
+                  : "bg-danger text-white hover:bg-danger-hover",
               )}
             >
               Leave meeting
@@ -278,90 +271,62 @@ export function Toolbar({
 type ButtonFaceProps = {
   label: string;
   icon: LucideIcon;
-  /** Draw Zoom's red line through the icon (microphone or camera is off). */
-  slashed?: boolean;
-  /** The small arrow Zoom shows beside most toolbar icons. */
-  hasCaret?: boolean;
-  /** A number shown next to the icon, e.g. how many participants. */
+  /** The icon to show while the device is off (microphone or camera). */
+  offIcon?: LucideIcon;
+  /** The device is off: the face turns red, as in most meeting apps. */
+  off?: boolean;
+  /** The panel or feature this control opens is showing. */
+  active?: boolean;
+  /** A number next to the label, e.g. how many participants. */
   count?: number;
-  /** Unread chat messages, shown as a red badge. */
+  /** Unread chat messages, shown as a badge on the face. */
   unread?: number;
 };
 
-/** What a toolbar button looks like: an icon with a label under it. */
-function ButtonFace({ label, icon: Icon, slashed, hasCaret, count, unread = 0 }: ButtonFaceProps) {
+/** What a control looks like: a round face with an icon, and a label under it. */
+function ButtonFace({ label, icon, offIcon, off, active, count, unread = 0 }: ButtonFaceProps) {
+  const Icon = off && offIcon ? offIcon : icon;
   return (
     <>
-      <span className="relative flex h-6 items-center gap-0.5">
-        <span className="relative flex items-center justify-center">
-          <Icon size={25} strokeWidth={1.5} />
-          {slashed && (
-            <span
-              aria-hidden
-              className="absolute h-[2px] w-[32px] -rotate-45 rounded-full bg-room-red"
-            />
-          )}
-        </span>
-        {count !== undefined && (
-          <span className="text-[11px] leading-none font-semibold">{count}</span>
+      <span
+        className={cn(
+          "relative flex size-11 items-center justify-center rounded-full transition-colors",
+          off
+            ? "bg-room-red text-white group-hover:bg-[#e04449]"
+            : active
+              ? "bg-brand text-white group-hover:bg-brand-hover"
+              : "bg-room-control group-hover:bg-room-line",
         )}
-        {hasCaret && (
-          <ChevronUp
-            size={11}
-            strokeWidth={2.2}
-            aria-hidden
-            className="hidden self-start text-room-faint sm:block"
-          />
-        )}
+      >
+        <Icon size={20} strokeWidth={1.9} />
         {unread > 0 && (
-          <span className="absolute -top-1.5 left-3.5 min-w-4 rounded-full bg-room-red px-1 text-center text-[10px] leading-4 font-semibold text-white">
+          <span className="absolute -top-1 -right-1 min-w-[18px] rounded-full bg-room-red px-1 text-center text-[10px] leading-[18px] font-semibold text-white ring-2 ring-room-bar">
             {unread}
           </span>
         )}
       </span>
-      <span className="hidden text-[13px] leading-none text-room-muted sm:block">{label}</span>
+      <span className="hidden text-[11px] leading-none text-room-muted sm:block">
+        {label}
+        {count !== undefined && <span className="ml-1 text-room-faint">{count}</span>}
+      </span>
     </>
   );
 }
 
 type ToolbarButtonProps = ButtonFaceProps & {
   onClick: () => void;
-  /** What pressing the button does, for screen readers ("Mute"); defaults to the label. */
-  actionLabel?: string;
-  /** The panel or feature this button controls is currently on. */
-  active?: boolean;
 };
 
-function ToolbarButton({ onClick, actionLabel, active = false, ...face }: ToolbarButtonProps) {
+function ToolbarButton({ onClick, ...face }: ToolbarButtonProps) {
   return (
     <button
       type="button"
-      aria-label={actionLabel ?? face.label}
-      aria-pressed={active}
+      aria-label={face.label}
+      aria-pressed={face.offIcon ? undefined : Boolean(face.active)}
       onClick={onClick}
-      className={cn(BUTTON_CLASS, active && "bg-room-hover")}
+      className={BUTTON_CLASS}
     >
       <ButtonFace {...face} />
     </button>
-  );
-}
-
-/** Zoom's End button: a red hexagon with a white cross. */
-function EndIcon(): ReactNode {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden className="size-[26px]">
-      <path
-        d="M7.2 3.6h9.6L21.6 12l-4.8 8.4H7.2L2.4 12z"
-        className="fill-none stroke-room-red"
-        strokeWidth="1.9"
-        strokeLinejoin="round"
-      />
-      <path
-        d="m9 9 6 6m0-6-6 6"
-        className="stroke-white"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-      />
-    </svg>
   );
 }

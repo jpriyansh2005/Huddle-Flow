@@ -125,7 +125,7 @@ export function MeetingRoom({ session }: { session: StoredSession }) {
                 setSoundBlocked(false);
                 setSoundRetryKey((key) => key + 1);
               }}
-              className="absolute top-3 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-lg bg-zoom-blue px-4 py-2 text-sm font-medium text-white shadow-popover hover:bg-zoom-blue-hover"
+              className="absolute top-3 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white shadow-popover hover:bg-brand-hover"
             >
               <Volume2 size={16} />
               Click to hear others

@@ -1,58 +1,60 @@
 @import "tailwindcss";
 
 /*
- * Design tokens. The values were measured from Zoom itself: colours were
- * sampled from the screenshots in Zoom's support articles, and the font
- * stack, button and input sizes were read from the Zoom web app's CSS.
- * Declaring them in @theme makes Tailwind generate utilities for each one
- * (bg-zoom-blue, text-ink-muted...).
+ * HuddleFlow design tokens. Declaring them in @theme makes Tailwind generate
+ * a utility for each one (bg-brand, text-ink-muted, border-line...), so the
+ * whole app draws from this one palette.
  */
 @theme {
-  /* Zoom's web app uses the operating system's font: Segoe UI on Windows,
-     SF Pro on macOS. This is the stack from its stylesheet. */
-  --font-sans:
-    system-ui, "SF Pro", "Segoe UI", "Almaden Sans", Roboto, Ubuntu, Helvetica, Arial, sans-serif;
+  /* Inter is loaded by next/font in app/layout.tsx; the rest is a fallback. */
+  --font-sans: var(--font-inter), system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
-  /* Brand */
-  --color-zoom-blue: #0d6bde;
-  --color-zoom-blue-hover: #0b5cc2;
-  --color-zoom-blue-soft: #e7f1fd;
-  --color-zoom-orange: #ff5f0f;
-  --color-zoom-orange-hover: #ec530a;
-  --color-zoom-red: #e8173d;
-  --color-zoom-red-hover: #cf1235;
-  --color-zoom-green: #1fb866;
-  /* The blue of the "zoom" wordmark. */
-  --color-brand-blue: #0b5cff;
+  /* Brand: "flow indigo" for primary actions, "huddle teal" for live and done. */
+  --color-brand: #3b4fe0;
+  --color-brand-hover: #2f40c4;
+  --color-brand-soft: #eef0fd;
+  --color-brand-ink: #2a37a8;
+  --color-accent: #0fa88f;
+  --color-accent-hover: #0c8f7a;
+  --color-accent-soft: #e3f6f2;
+  --color-accent-ink: #087a68;
+  --color-danger: #e5484d;
+  --color-danger-hover: #cc3a3f;
+  --color-danger-soft: #fdeced;
+  --color-warning: #f5a524;
+  --color-warning-soft: #fef4e2;
+  --color-warning-ink: #9a5b00;
 
-  /* Light surfaces: dashboard, dialogs, side panels */
-  --color-ink: #222325;
-  --color-ink-muted: #6e7680;
-  --color-ink-faint: #adb1b8;
-  --color-line: #e4e6ea;
-  --color-field: #c1c6ce;
-  /* The grey frame around the white page: top bar and navigation rail. */
-  --color-chrome: #dfe2e7;
-  --color-chrome-hover: #d2d6dc;
-  --color-chrome-field: #c8cbd0;
-  --color-canvas: #f8f9fb;
-  --color-hover: #f1f4f6;
+  /* The navigation rail. */
+  --color-navy: #0f1b3d;
+  --color-navy-hover: #1b2a55;
+  --color-navy-muted: #8b95b5;
 
-  /* Dark surfaces: the meeting room */
-  --color-room: #131619;
-  --color-room-bar: #131619;
-  --color-room-top: #1d1e20;
-  --color-room-tile: #313235;
-  --color-room-line: #3a3c40;
-  --color-room-hover: #2a2d31;
-  --color-room-text: #f7f9fa;
-  --color-room-muted: #dfe3e8;
-  --color-room-faint: #8e9194;
-  /* Zoom's in-meeting red (muted microphone, End) and speaker green. */
-  --color-room-red: #ff0055;
-  --color-room-green: #00ff91;
+  /* Light surfaces: dashboard, dialogs, side panels. */
+  --color-ink: #1e2433;
+  --color-ink-muted: #5b6478;
+  --color-ink-faint: #9aa3b5;
+  --color-line: #e3e7ef;
+  --color-field: #cbd2de;
+  --color-canvas: #f6f8fb;
+  --color-hover: #f0f3f8;
 
-  --shadow-popover: 0 8px 28px rgb(19 22 25 / 0.2);
+  /* Dark surfaces: the meeting room. */
+  --color-room: #0b1120;
+  --color-room-top: #0b1120;
+  --color-room-bar: #0b1120;
+  --color-room-tile: #1a2235;
+  --color-room-line: #2a3550;
+  --color-room-hover: #1f2a40;
+  --color-room-control: #1f2a40;
+  --color-room-text: #e6eaf2;
+  --color-room-muted: #b4bccf;
+  --color-room-faint: #7c869e;
+  --color-room-red: #f2555a;
+  --color-room-green: #2ee6b0;
+
+  --shadow-card: 0 1px 2px rgb(15 27 61 / 0.05);
+  --shadow-popover: 0 10px 30px rgb(15 27 61 / 0.18);
 
   --animate-pop-in: pop-in 0.16s ease-out;
   --animate-float-up: float-up 3.5s ease-out forwards;
@@ -93,7 +95,7 @@ body {
 }
 
 body {
-  background: #ffffff;
+  background: var(--color-canvas);
   color: var(--color-ink);
   font-family: var(--font-sans);
 }
@@ -105,14 +107,14 @@ button:not(:disabled),
 
 /* One consistent keyboard focus ring everywhere. */
 :focus-visible {
-  outline: 2px solid var(--color-zoom-blue);
+  outline: 2px solid var(--color-brand);
   outline-offset: 2px;
 }
 
 /* Slim scrollbars for lists and side panels. */
 .thin-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: #c9ced6 transparent;
+  scrollbar-color: #c9cfdb transparent;
 }
 
 @media (prefers-reduced-motion: reduce) {

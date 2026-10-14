@@ -50,7 +50,7 @@ export function Modal({ title, onClose, children, widthClassName = "max-w-md" }:
     >
       <div className="flex max-h-[calc(100dvh-2rem)] flex-col">
         <header className="flex items-center justify-between px-8 pt-7 pb-4">
-          <h2 className="text-xl font-bold">{title}</h2>
+          <h2 className="text-xl font-semibold tracking-tight text-navy">{title}</h2>
           <button
             type="button"
             onClick={onClose}

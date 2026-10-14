@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
 
-/** Shared look for text inputs, selects and textareas (Zoom's web app: 40px tall, 12px corners). */
+/** Shared look for text inputs, selects and textareas: 40px tall, 12px corners. */
 export const inputClassName =
   "h-10 w-full rounded-xl border border-field bg-white px-3.5 text-sm text-ink " +
   "placeholder:text-ink-muted transition-colors hover:border-[#9aa1ab] " +
-  "focus:border-zoom-blue focus:outline-none focus:ring-2 focus:ring-zoom-blue/20";
+  "focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20";
 
 type FieldProps = {
   label: string;
@@ -23,7 +23,7 @@ export function Field({ label, htmlFor, error, children }: FieldProps) {
       </label>
       {children}
       {error && (
-        <p role="alert" className="mt-1.5 text-[13px] text-zoom-red">
+        <p role="alert" className="mt-1.5 text-[13px] text-danger">
           {error}
         </p>
       )}

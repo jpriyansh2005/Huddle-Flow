@@ -1,28 +1,32 @@
 import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
 
 import { ToastProvider } from "@/components/ui/Toast";
 
 import "./globals.css";
 
+// next/font downloads Inter at build time and serves it from this site, so
+// visitors' browsers never contact Google. globals.css uses the variable.
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+
 export const metadata: Metadata = {
   title: {
-    default: "Zoom Clone",
-    template: "%s | Zoom Clone",
+    default: "HuddleFlow",
+    template: "%s | HuddleFlow",
   },
-  description: "A video conferencing app modelled on Zoom: start, join and schedule meetings.",
+  description:
+    "HuddleFlow: video meetings with an agenda, shared notes and a recap, so every meeting ends with a plan.",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#dfe2e7",
+  themeColor: "#0f1b3d",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
-  // No web font is loaded: like Zoom's web app, the page uses the system
-  // font (see --font-sans in globals.css).
   return (
-    <html lang="en" className="antialiased">
+    <html lang="en" className={`${inter.variable} antialiased`}>
       <body>
         <ToastProvider>{children}</ToastProvider>
       </body>

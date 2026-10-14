@@ -17,7 +17,7 @@ type MeetingHeaderProps = {
 };
 
 /**
- * The title bar of a Zoom meeting: the info button and topic on the left,
+ * The title bar of a meeting: the info button and topic on the left,
  * the timer and the green security shield on the right.
  */
 export function MeetingHeader({ meeting, status }: MeetingHeaderProps) {
@@ -36,7 +36,7 @@ export function MeetingHeader({ meeting, status }: MeetingHeaderProps) {
       </div>
 
       <div className="flex shrink-0 items-center gap-3 text-[13px] text-room-muted">
-        {status === "reconnecting" && <span className="text-zoom-orange">Reconnecting...</span>}
+        {status === "reconnecting" && <span className="text-warning">Reconnecting...</span>}
         {status === "connecting" && <span>Connecting...</span>}
         <ElapsedTime since={meeting.started_at} />
         <span title="This meeting is protected" className="flex text-room-green">
@@ -74,12 +74,12 @@ function MeetingInfoCard({ meeting }: { meeting: Meeting }) {
         <dt className="text-ink-muted">Host</dt>
         <dd>{meeting.host.name}</dd>
         <dt className="text-ink-muted">Invite link</dt>
-        <dd className="min-w-0 break-all text-zoom-blue">{meeting.join_url}</dd>
+        <dd className="min-w-0 break-all text-brand">{meeting.join_url}</dd>
       </dl>
       <button
         type="button"
         onClick={copyLink}
-        className="mt-3 flex items-center gap-1.5 text-[13px] font-medium text-zoom-blue hover:underline"
+        className="mt-3 flex items-center gap-1.5 text-[13px] font-medium text-brand hover:underline"
       >
         {copied ? <Check size={14} /> : <Copy size={14} />}
         {copied ? "Copied" : "Copy link"}
