@@ -211,6 +211,26 @@ The server checks the role again on every host-only WebSocket message
   dashboard renders. An expired cookie gets a 401 from the API, which also
   clears the cookie and leads to sign-in, so there is no redirect loop.
 
+### The agenda
+
+- **Progress lives in the database, not in memory.** Each `agenda_items` row
+  has `started_at` and `ended_at`. The topic being discussed is the one that
+  has started and not ended. A refresh, a reconnect or even a server restart
+  keeps the agenda where it was, and the recap can compare planned and actual
+  minutes.
+- **Three host-only room messages** change it: `agenda_next` (start the
+  first topic, move on, or finish on the last), `agenda_back` (undo the last
+  Next) and `agenda_add`. Each is applied by `services/agenda_service.py` and
+  answered with one `agenda_updated` broadcast holding the whole agenda, so
+  every browser simply replaces its copy.
+- **Timers agree across clocks.** `room_state` and `agenda_updated` carry the
+  server's time. Each browser keeps the difference to its own clock
+  (`lib/agenda.ts::clockOffset`) and counts down in server time.
+- **Replacing an agenda** deletes the old rows before inserting the new ones;
+  otherwise the new topic 1 would clash with the old topic 1 on the
+  `(meeting_id, position)` unique constraint. A running meeting's agenda can
+  only be extended from inside the meeting, so live progress is never wiped.
+
 ## Realtime layer
 
 Files: `backend/app/realtime/`, `frontend/src/lib/realtime/`,

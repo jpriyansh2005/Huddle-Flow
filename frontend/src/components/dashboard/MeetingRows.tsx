@@ -36,7 +36,11 @@ export function UpcomingMeetingRow({ meeting }: { meeting: Meeting }) {
           {isLive && <StatusChip tone="live">Live</StatusChip>}
         </p>
         <p className="truncate text-sm font-semibold">{meeting.title}</p>
-        <p className="text-[12px] text-ink-muted">Meeting ID: {formatMeetingCode(meeting.code)}</p>
+        <p className="text-[12px] text-ink-muted">
+          Meeting ID: {formatMeetingCode(meeting.code)}
+          {meeting.agenda.length > 0 &&
+            ` · ${meeting.agenda.length} agenda ${meeting.agenda.length === 1 ? "topic" : "topics"}`}
+        </p>
       </div>
       <Button size="sm" disabled={isLaunching} onClick={() => startMeeting(meeting)}>
         {isLive ? "Rejoin" : "Start"}
@@ -72,7 +76,9 @@ export function RecentMeetingRow({ meeting }: { meeting: Meeting }) {
           Rejoin
         </Button>
       ) : (
-        <StatusChip tone="neutral">{meeting.status === "ended" ? "Ended" : "Not started"}</StatusChip>
+        <StatusChip tone="neutral">
+          {meeting.status === "ended" ? "Ended" : "Not started"}
+        </StatusChip>
       )}
       <MeetingActionsMenu meeting={meeting} />
     </li>

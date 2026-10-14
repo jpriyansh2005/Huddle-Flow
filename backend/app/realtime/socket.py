@@ -9,9 +9,10 @@ from starlette.websockets import WebSocketState
 
 from app.core.config import get_settings
 from app.core.exceptions import MeetingNotFoundError
+from app.core.time import utc_now
 from app.db.session import get_session_factory
 from app.models import MeetingKind, MeetingStatus
-from app.realtime.events import EVENT_HANDLERS, EventContext
+from app.realtime.events import EVENT_HANDLERS, EventContext, agenda_snapshot
 from app.realtime.rooms import CLOSE_INVALID_SESSION, CLOSE_REPLACED, Connection, rooms
 from app.services import meeting_service, participant_service
 
@@ -34,6 +35,7 @@ async def meeting_socket(
         participant = participant_service.get_active_session(db, code, token)
         if participant is not None:
             participant_service.mark_connected(db, participant.id)
+            agenda = agenda_snapshot(participant.meeting)
     if participant is None:
         await websocket.close(code=CLOSE_INVALID_SESSION, reason="Invalid or expired session")
         return
@@ -55,6 +57,8 @@ async def meeting_socket(
             "type": "room_state",
             "self_id": connection.participant_id,
             "participants": [member.to_public() for member in rooms.connections(code)],
+            "agenda": agenda,
+            "server_time": utc_now().isoformat(),
         },
     )
     await rooms.broadcast(

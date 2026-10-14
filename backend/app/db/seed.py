@@ -14,7 +14,15 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.time import utc_now
-from app.models import Meeting, MeetingKind, MeetingStatus, Participant, ParticipantRole, User
+from app.models import (
+    AgendaItem,
+    Meeting,
+    MeetingKind,
+    MeetingStatus,
+    Participant,
+    ParticipantRole,
+    User,
+)
 from app.services.meeting_code import generate_meeting_code
 from app.services.user_service import get_or_create_demo_user
 
@@ -45,6 +53,28 @@ UPCOMING = [
         30,
     ),
 ]
+
+# Planned agendas of the upcoming meetings: (topic, minutes).
+UPCOMING_AGENDAS = {
+    "Daily Standup": [("Yesterday", 5), ("Today", 5), ("Blockers", 5)],
+    "Product Roadmap Review": [
+        ("Q3 results", 10),
+        ("Q4 priorities", 30),
+        ("Risks", 10),
+        ("Decisions", 10),
+    ],
+    "Design Critique: Onboarding Flow": [("Walkthrough", 15), ("Feedback", 20), ("Next steps", 10)],
+}
+
+# Agendas of past meetings: (topic, planned minutes, minutes it really took).
+RECENT_AGENDAS = {
+    "Sprint Planning": [
+        ("Review the last sprint", 10, 12),
+        ("Pick the stories", 25, 28),
+        ("Estimate and commit", 20, 15),
+    ],
+    "Engineering All Hands": [("Company update", 15, 18), ("Demos", 30, 32), ("Q&A", 15, 12)],
+}
 
 # (title, ended how long ago, length in minutes, guests who attended)
 RECENT = [
@@ -80,6 +110,10 @@ def seed_database(db: Session) -> bool:
                 status=MeetingStatus.SCHEDULED,
                 scheduled_start=now + starts_in,
                 duration_minutes=duration,
+                agenda_items=[
+                    AgendaItem(position=index, title=topic, duration_minutes=minutes)
+                    for index, (topic, minutes) in enumerate(UPCOMING_AGENDAS.get(title, []))
+                ],
             )
         )
         db.flush()  # make the new code visible to the next uniqueness check
@@ -105,6 +139,7 @@ def seed_database(db: Session) -> bool:
                 for guest in guests
             ],
         ]
+        meeting.agenda_items = _past_agenda(RECENT_AGENDAS.get(title, []), started_at)
         db.add(meeting)
         db.flush()
 
@@ -127,6 +162,24 @@ def _attendance(
         joined_at=joined_at,
         left_at=left_at,
     )
+
+
+def _past_agenda(items: list[tuple[str, int, int]], start: datetime) -> list[AgendaItem]:
+    """Agenda items that ran one after the other from ``start``."""
+    agenda = []
+    for index, (topic, planned, actual) in enumerate(items):
+        end = start + timedelta(minutes=actual)
+        agenda.append(
+            AgendaItem(
+                position=index,
+                title=topic,
+                duration_minutes=planned,
+                started_at=start,
+                ended_at=end,
+            )
+        )
+        start = end
+    return agenda
 
 
 def _round_up_to_half_hour(moment: datetime) -> datetime:

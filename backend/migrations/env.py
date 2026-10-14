@@ -12,7 +12,7 @@ from sqlalchemy import Connection
 
 from app import models  # noqa: F401  (registers every table on Base.metadata)
 from app.core.config import get_settings
-from app.db.base import Base
+from app.db.base import Base, UTCDateTime
 from app.db.session import build_engine
 
 config = context.config
@@ -24,6 +24,18 @@ if config.config_file_name is not None and config.attributes.get("configure_logg
 target_metadata = Base.metadata
 
 
+def render_item(type_: str, obj, autogen_context):
+    """Write the app's own column types as plain SQLAlchemy in new migrations.
+
+    A migration must not import app code: the app changes over time, and old
+    migrations have to keep working.
+    """
+    if type_ == "type" and isinstance(obj, UTCDateTime):
+        autogen_context.imports.add("from sqlalchemy.dialects import mysql")
+        return 'sa.DateTime().with_variant(mysql.DATETIME(fsp=6), "mysql")'
+    return False
+
+
 def run_migrations(connection: Connection) -> None:
     context.configure(
         connection=connection,
@@ -32,6 +44,7 @@ def run_migrations(connection: Connection) -> None:
         # rebuilds the table instead. Other databases ignore the flag.
         render_as_batch=connection.dialect.name == "sqlite",
         compare_type=True,
+        render_item=render_item,
     )
     with context.begin_transaction():
         context.run_migrations()

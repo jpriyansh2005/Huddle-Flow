@@ -13,6 +13,9 @@ mute_all          (host)    force_mute + participant_updated
 mute_participant  (host)    force_mute + participant_updated
 remove_participant (host)   removed + participant_left
 end_meeting       (host)    meeting_ended
+agenda_next       (host)    agenda_updated
+agenda_back       (host)    agenda_updated
+agenda_add        (host)    agenda_updated
 """
 
 import uuid
@@ -21,14 +24,17 @@ from dataclasses import dataclass
 
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.core.exceptions import DomainError
 from app.core.time import utc_now
+from app.models import Meeting
 from app.realtime.rooms import (
     CLOSE_MEETING_ENDED,
     CLOSE_REMOVED_BY_HOST,
     Connection,
     RoomRegistry,
 )
-from app.services import meeting_service, participant_service
+from app.schemas.meeting import AgendaItemOut
+from app.services import agenda_service, meeting_service, participant_service
 
 MAX_CHAT_LENGTH = 1000
 ALLOWED_REACTIONS = {"👏", "👍", "❤️", "😂", "😮", "🎉"}
@@ -154,6 +160,63 @@ async def handle_end_meeting(ctx: EventContext, payload: dict) -> None:
         await ctx.rooms.close(connection, CLOSE_MEETING_ENDED, "Meeting ended")
 
 
+@host_only
+async def handle_agenda_next(ctx: EventContext, payload: dict) -> None:
+    await _change_agenda(ctx, agenda_service.advance)
+
+
+@host_only
+async def handle_agenda_back(ctx: EventContext, payload: dict) -> None:
+    await _change_agenda(ctx, agenda_service.go_back)
+
+
+@host_only
+async def handle_agenda_add(ctx: EventContext, payload: dict) -> None:
+    minutes = payload.get("duration_minutes")
+    # bool is a subclass of int in Python; True must not count as 1 minute.
+    if not isinstance(minutes, int) or isinstance(minutes, bool):
+        await _send_error(ctx, "Give the agenda item a number of minutes.")
+        return
+    title = str(payload.get("title", ""))
+    await _change_agenda(
+        ctx, lambda db, meeting: agenda_service.add_item(db, meeting, title, minutes)
+    )
+
+
+def agenda_snapshot(meeting: Meeting) -> list[dict]:
+    """The agenda as JSON-ready dictionaries, in order."""
+    return [
+        AgendaItemOut.model_validate(item).model_dump(mode="json") for item in meeting.agenda_items
+    ]
+
+
+def agenda_message(meeting: Meeting) -> dict:
+    # server_time lets each browser correct for its own clock being off, so
+    # every timer in the room shows the same remaining time.
+    return {
+        "type": "agenda_updated",
+        "agenda": agenda_snapshot(meeting),
+        "server_time": utc_now().isoformat(),
+    }
+
+
+async def _change_agenda(ctx: EventContext, change: Callable[[Session, Meeting], None]) -> None:
+    with ctx.session_factory() as db:
+        meeting = meeting_service.get_meeting_by_code(db, ctx.code)
+        try:
+            change(db, meeting)
+        except DomainError as error:
+            db.rollback()
+            await _send_error(ctx, error.message)
+            return
+        message = agenda_message(meeting)
+    await ctx.rooms.broadcast(ctx.code, message)
+
+
+async def _send_error(ctx: EventContext, message: str) -> None:
+    await ctx.rooms.send(ctx.sender, {"type": "error", "message": message})
+
+
 async def _force_mute(ctx: EventContext, target: Connection) -> None:
     if not target.audio:
         return
@@ -179,4 +242,7 @@ EVENT_HANDLERS: dict[str, Handler] = {
     "mute_participant": handle_mute_participant,
     "remove_participant": handle_remove_participant,
     "end_meeting": handle_end_meeting,
+    "agenda_next": handle_agenda_next,
+    "agenda_back": handle_agenda_back,
+    "agenda_add": handle_agenda_add,
 }

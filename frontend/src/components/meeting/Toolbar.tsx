@@ -4,6 +4,7 @@ import {
   Ellipsis,
   Hand,
   Link2,
+  ListChecks,
   type LucideIcon,
   MessageSquare,
   Mic,
@@ -21,14 +22,14 @@ import { Popover } from "@/components/ui/Popover";
 import type { LocalMedia } from "@/hooks/useLocalMedia";
 import { cn } from "@/lib/cn";
 
-export type SidePanel = "participants" | "chat";
+export type SidePanel = "participants" | "chat" | "agenda";
 
 /** Must match ALLOWED_REACTIONS in backend/app/realtime/events.py. */
 const REACTIONS = ["👏", "👍", "❤️", "😂", "😮", "🎉"];
 
 /** The clickable area of a control: the round face with its label underneath. */
 const BUTTON_CLASS =
-  "group flex w-14 flex-col items-center gap-1 rounded-xl py-1 text-room-text sm:w-[68px]";
+  "group flex w-12 flex-col items-center gap-1 rounded-xl py-1 text-room-text sm:w-[68px]";
 const MENU_CLASS =
   "rounded-xl border border-room-line bg-room-tile text-[13px] text-room-text shadow-popover";
 const MENU_ITEM_CLASS = "flex w-full items-center gap-2.5 px-4 py-2 text-left hover:bg-room-hover";
@@ -98,6 +99,14 @@ export function Toolbar({
           active={activePanel === "chat"}
           onClick={() => onTogglePanel("chat")}
         />
+        <div className="hidden md:block">
+          <ToolbarButton
+            label="Agenda"
+            icon={ListChecks}
+            active={activePanel === "agenda"}
+            onClick={() => onTogglePanel("agenda")}
+          />
+        </div>
 
         <Popover
           label="Reactions"
@@ -195,6 +204,17 @@ export function Toolbar({
                 <Link2 size={16} />
                 Copy invite link
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onTogglePanel("agenda");
+                  close();
+                }}
+                className={cn(MENU_ITEM_CLASS, "md:hidden")}
+              >
+                <ListChecks size={16} />
+                Agenda
+              </button>
               {media.canShareScreen && (
                 <button
                   type="button"
@@ -230,7 +250,7 @@ export function Toolbar({
         label={isHost ? "End meeting" : "Leave meeting"}
         placement="top"
         align="end"
-        triggerClassName="flex h-11 items-center gap-2 rounded-full bg-danger px-4 text-sm font-medium text-white transition-colors hover:bg-danger-hover sm:px-5"
+        triggerClassName="flex h-11 items-center gap-2 rounded-full bg-danger px-3.5 text-sm font-medium text-white transition-colors hover:bg-danger-hover sm:px-5"
         trigger={
           <>
             <PhoneOff size={18} />
@@ -290,7 +310,7 @@ function ButtonFace({ label, icon, offIcon, off, active, count, unread = 0 }: Bu
     <>
       <span
         className={cn(
-          "relative flex size-11 items-center justify-center rounded-full transition-colors",
+          "relative flex size-10 items-center justify-center rounded-full transition-colors sm:size-11",
           off
             ? "bg-room-red text-white group-hover:bg-[#e04449]"
             : active

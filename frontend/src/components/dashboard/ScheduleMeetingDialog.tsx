@@ -17,6 +17,8 @@ import {
 } from "@/lib/datetime";
 import type { Meeting } from "@/lib/types";
 
+import { AgendaEditor, type DraftItem, draftItem } from "./AgendaEditor";
+
 type ScheduleMeetingDialogProps = {
   /** Pass a meeting to edit it; leave out to schedule a new one. */
   meeting?: Meeting;
@@ -50,6 +52,9 @@ export function ScheduleMeetingDialog({ meeting, onClose, onSaved }: ScheduleMee
   const [time, setTime] = useState(toTimeInputValue(initialStart));
   const [hours, setHours] = useState(Math.floor(initialDuration / 60));
   const [minutes, setMinutes] = useState(initialDuration % 60);
+  const [agenda, setAgenda] = useState<DraftItem[]>(() =>
+    (meeting?.agenda ?? []).map((item) => draftItem(item.title, item.duration_minutes)),
+  );
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -75,6 +80,10 @@ export function ScheduleMeetingDialog({ meeting, onClose, onSaved }: ScheduleMee
       // toISOString() converts the local time to UTC, which the API expects.
       scheduled_start: start.toISOString(),
       duration_minutes: durationMinutes,
+      // Rows left without a topic are simply dropped.
+      agenda: agenda
+        .filter((item) => item.title.trim())
+        .map((item) => ({ title: item.title.trim(), duration_minutes: item.duration_minutes })),
     };
 
     setIsSaving(true);
@@ -170,13 +179,14 @@ export function ScheduleMeetingDialog({ meeting, onClose, onSaved }: ScheduleMee
                 onChange={(event) => setMinutes(Number(event.target.value))}
                 className={inputClassName}
               >
-                {(MINUTE_OPTIONS.includes(minutes) ? MINUTE_OPTIONS : [minutes, ...MINUTE_OPTIONS]).map(
-                  (option) => (
-                    <option key={option} value={option}>
-                      {option} min
-                    </option>
-                  ),
-                )}
+                {(MINUTE_OPTIONS.includes(minutes)
+                  ? MINUTE_OPTIONS
+                  : [minutes, ...MINUTE_OPTIONS]
+                ).map((option) => (
+                  <option key={option} value={option}>
+                    {option} min
+                  </option>
+                ))}
               </select>
             </div>
           </Field>
@@ -185,6 +195,8 @@ export function ScheduleMeetingDialog({ meeting, onClose, onSaved }: ScheduleMee
             <p className="flex h-10 items-center text-sm text-ink-muted">{localTimeZone()}</p>
           </div>
         </div>
+
+        <AgendaEditor items={agenda} onChange={setAgenda} meetingMinutes={hours * 60 + minutes} />
 
         <div>
           <p className="mb-1.5 text-sm">Meeting ID</p>
