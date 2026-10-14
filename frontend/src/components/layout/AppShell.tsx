@@ -9,7 +9,6 @@ import { useDashboard } from "@/components/dashboard/DashboardProvider";
 import { Avatar } from "@/components/ui/Avatar";
 import { DropdownMenu } from "@/components/ui/DropdownMenu";
 import { LogoMark } from "@/components/ui/Logo";
-import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 
 type NavItem = {
@@ -67,8 +66,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 }
 
 function TopBar({ title }: { title: string }) {
-  const { user, startInstantMeeting, openJoinDialog, openScheduleDialog } = useDashboard();
-  const showToast = useToast();
+  const { user, startInstantMeeting, openJoinDialog, openScheduleDialog, signOut } = useDashboard();
 
   return (
     <header className="flex h-14 shrink-0 items-center gap-3 border-b border-line bg-white px-4 md:px-6">
@@ -110,7 +108,7 @@ function TopBar({ title }: { title: string }) {
           {
             label: "Sign out",
             icon: <LogOut size={16} />,
-            onSelect: () => showToast("Accounts are coming in the next update"),
+            onSelect: signOut,
           },
         ]}
       />

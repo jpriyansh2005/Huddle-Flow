@@ -3,7 +3,7 @@
 import { ChevronLeft, Mic, MicOff, UserRound, Video, VideoOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { type FormEvent, type ReactNode, useCallback, useState } from "react";
+import { type FormEvent, type ReactNode, useCallback, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { Logo } from "@/components/ui/Logo";
@@ -66,6 +66,21 @@ function PreJoinForm({ meeting }: { meeting: Meeting }) {
   const [rememberName, setRememberName] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isJoining, setIsJoining] = useState(false);
+
+  // A signed-in visitor gets their account name suggested. Guests have no
+  // session; that is fine and nothing is shown.
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .checkSession()
+      .then((user) => {
+        if (!cancelled) setName((current) => current || user.name);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();

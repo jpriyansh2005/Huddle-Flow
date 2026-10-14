@@ -8,7 +8,7 @@ from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.time import utc_now
-from app.db.base import Base, UTCDateTime, enum_column
+from app.db.base import Base, UTCDateTime, enum_column, token_column
 
 if TYPE_CHECKING:
     from app.models.meeting import Meeting
@@ -44,7 +44,7 @@ class Participant(Base):
     )
     # Random secret handed to the browser on join. It proves who is opening
     # the WebSocket, since guests have no login.
-    session_token: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    session_token: Mapped[str] = mapped_column(token_column(64), unique=True, index=True)
 
     joined_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utc_now)
     left_at: Mapped[datetime | None] = mapped_column(UTCDateTime)

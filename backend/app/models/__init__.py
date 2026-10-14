@@ -3,6 +3,7 @@
 from app.models.meeting import Meeting, MeetingKind, MeetingStatus
 from app.models.participant import Participant, ParticipantRole
 from app.models.user import User
+from app.models.user_session import UserSession
 
 __all__ = [
     "Meeting",
@@ -11,4 +12,5 @@ __all__ = [
     "Participant",
     "ParticipantRole",
     "User",
+    "UserSession",
 ]

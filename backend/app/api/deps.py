@@ -2,24 +2,36 @@
 
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, Request
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
+from app.core.exceptions import NotAuthenticatedError
 from app.db.session import get_db
 from app.models import User
-from app.services.user_service import get_or_create_default_user
+from app.services import auth_service
 
 DbSession = Annotated[Session, Depends(get_db)]
 
 
-def get_current_user(db: DbSession) -> User:
-    """The logged-in user.
+def session_token(request: Request) -> str | None:
+    """The session token from the browser's cookie, if it sent one."""
+    return request.cookies.get(get_settings().session_cookie_name)
 
-    The assignment says to assume a default user instead of building login.
-    Every route gets the user through this one function, so adding real
-    authentication later means changing only this function.
-    """
-    return get_or_create_default_user(db)
+
+def get_optional_user(request: Request, db: DbSession) -> User | None:
+    """The signed-in user, or None for a visitor without a valid session."""
+    return auth_service.user_for_token(db, session_token(request))
+
+
+OptionalUser = Annotated[User | None, Depends(get_optional_user)]
+
+
+def get_current_user(user: OptionalUser) -> User:
+    """The signed-in user. Routes that need one answer 401 without it."""
+    if user is None:
+        raise NotAuthenticatedError()
+    return user
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]

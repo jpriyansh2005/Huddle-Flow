@@ -16,7 +16,15 @@ class Settings(BaseSettings):
     app_name: str = "HuddleFlow API"
     api_prefix: str = "/api/v1"
 
+    # SQLite file by default; in production a MySQL address such as
+    # mysql+pymysql://user:password@host:3306/huddleflow?charset=utf8mb4
     database_url: str = f"sqlite:///{(BACKEND_DIR / 'huddleflow.db').as_posix()}"
+    # Hosted databases usually require an encrypted connection. With no CA
+    # file the operating system's certificate store is used.
+    database_ssl: bool = False
+    database_ssl_ca: str | None = None
+    # Bring the schema up to date with the migrations when the app starts.
+    migrate_on_startup: bool = True
 
     # Where the Next.js app is served: used for invite links and CORS.
     frontend_url: str = "http://localhost:3000"
@@ -31,9 +39,21 @@ class Settings(BaseSettings):
     # How long an instant meeting stays open after the last person leaves.
     empty_room_grace_seconds: float = 60
 
-    # The assignment assumes one logged-in user instead of real authentication.
-    default_user_name: str = "Alex Morgan"
-    default_user_email: str = "alex.morgan@example.com"
+    # Accounts. The session cookie is sent only over HTTPS when cookie_secure
+    # is on, which it must be in production.
+    session_cookie_name: str = "hf_session"
+    session_days: int = 30
+    cookie_secure: bool = False
+    # After this many wrong passwords for one email, logins for that email
+    # are refused for the lockout period.
+    login_max_failures: int = 5
+    login_lockout_minutes: int = 15
+
+    # The demo account owns the sample meetings. "Try the demo" signs in to
+    # it without a password; nobody knows its password.
+    demo_enabled: bool = True
+    demo_user_name: str = "Alex Morgan"
+    demo_user_email: str = "demo@huddleflow.app"
 
     @property
     def cors_origins(self) -> list[str]:
