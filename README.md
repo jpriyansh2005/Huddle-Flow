@@ -36,6 +36,13 @@ agenda, shared notes, action items and a recap. See the [roadmap](#roadmap).
 - A Meetings page with Upcoming and Previous tabs
 - Copy the invitation or the meeting ID, edit or delete a scheduled meeting
 
+**Agenda with timers**
+- Plan the topics and minutes of a meeting while scheduling it, or add topics during the meeting
+- In the meeting, everyone sees the current topic and its countdown; it turns amber near the end and red when over
+- The host moves the agenda on with Start, Next topic, Back and Finish
+- Timers use the server's clock, so they agree even when a participant's computer clock is wrong
+- Progress is saved, so a refresh or reconnect keeps it, and the actual time of each topic is recorded
+
 **Meetings**
 - Instant meetings with a unique 11-digit meeting ID and an invite link (`/j/{id}`)
 - Join by ID or link; a display name is required, and unknown or ended meetings are refused
@@ -55,8 +62,8 @@ agenda, shared notes, action items and a recap. See the [roadmap](#roadmap).
 |---|---|---|
 | 0 | HuddleFlow brand: name, logo, colours, layout | Done |
 | 1 | Accounts: sign up, log in, MySQL in production, database migrations | Done |
-| 2 | Agenda with timers | Next |
-| 3 | Shared notes, action items and saved chat | Planned |
+| 2 | Agenda with timers | Done |
+| 3 | Shared notes, action items and saved chat | Next |
 | 4 | Meeting recap page | Planned |
 | 5 | Live captions and an AI summary | Planned |
 
@@ -224,13 +231,13 @@ running backend.
 | GET | `/meetings/upcoming` | Scheduled meetings that have not finished |
 | GET | `/meetings/recent` | Past and instant meetings |
 | POST | `/meetings/instant` | Create a meeting that starts now |
-| POST | `/meetings` | Schedule a meeting |
+| POST | `/meetings` | Schedule a meeting, optionally with an agenda |
 | GET | `/meetings/{id}` | Look a meeting up; used to validate an ID |
-| PATCH | `/meetings/{id}` | Edit a scheduled meeting |
+| PATCH | `/meetings/{id}` | Edit a scheduled meeting; a sent agenda replaces the old one |
 | DELETE | `/meetings/{id}` | Delete a meeting |
 | POST | `/meetings/{id}/start` | Enter as the host |
 | POST | `/meetings/{id}/join` | Enter as a guest with a display name |
-| WS | `/ws/meetings/{id}?token=...` | The live room |
+| WS | `/ws/meetings/{id}?token=...` | The live room (presence, chat, host controls, agenda) |
 
 `{id}` is the 11-digit meeting ID. It may be sent with or without spaces.
 Meeting routes need a signed-in user, except looking a meeting up and joining
@@ -238,13 +245,15 @@ it, which guests do.
 
 ## Database
 
-Four tables: `users`, `user_sessions`, `meetings` and `participants`.
+Five tables: `users`, `user_sessions`, `meetings`, `participants` and
+`agenda_items`.
 
 ```mermaid
 erDiagram
     USERS ||--o{ USER_SESSIONS : "signed in as"
     USERS ||--o{ MEETINGS : hosts
     MEETINGS ||--o{ PARTICIPANTS : has
+    MEETINGS ||--o{ AGENDA_ITEMS : plans
     USERS |o--o{ PARTICIPANTS : "attends as (optional)"
 ```
 
@@ -255,6 +264,8 @@ erDiagram
 - A **meeting** has a public 11-digit `code`, a `kind` (instant or scheduled),
   a `status` (scheduled, live or ended), its planned time and its actual start
   and end.
+- An **agenda item** is one topic with its planned minutes, and the times it
+  really started and ended. Its position in the agenda is unique per meeting.
 - A **participant** is one person's attendance in one meeting. `user_id` is
   empty for guests, who join with only a display name.
 

@@ -39,6 +39,17 @@ export function MeetingScheduledDialog({ meeting, onClose }: MeetingScheduledDia
           </Row>
         )}
         <Row label="Meeting ID">{formatMeetingCode(meeting.code)}</Row>
+        {meeting.agenda.length > 0 && (
+          <Row label="Agenda">
+            <ol className="list-inside list-decimal font-normal">
+              {meeting.agenda.map((item) => (
+                <li key={item.id} className="truncate">
+                  {item.title} <span className="text-ink-muted">({item.duration_minutes} min)</span>
+                </li>
+              ))}
+            </ol>
+          </Row>
+        )}
         <Row label="Invite link">
           <span className="flex items-center gap-2">
             <a href={meeting.join_url} className="min-w-0 truncate text-brand hover:underline">

@@ -16,6 +16,7 @@ from pydantic import (
 from app.core.config import get_settings
 from app.core.time import to_utc
 from app.models import MeetingKind, MeetingStatus, ParticipantRole
+from app.models.agenda_item import MAX_AGENDA_ITEMS, MAX_ITEM_MINUTES
 from app.schemas.user import UserOut
 
 MAX_DURATION_MINUTES = 24 * 60
@@ -28,6 +29,26 @@ Duration = Annotated[int, Field(ge=1, le=MAX_DURATION_MINUTES)]
 # silently read in the server's timezone instead of the user's. The value is
 # then converted to UTC, the only timezone the backend works in.
 UtcDatetime = Annotated[AwareDatetime, AfterValidator(to_utc)]
+AgendaMinutes = Annotated[int, Field(ge=1, le=MAX_ITEM_MINUTES)]
+
+
+class AgendaItemIn(BaseModel):
+    title: Title
+    duration_minutes: AgendaMinutes
+
+
+class AgendaItemOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    position: int
+    title: str
+    duration_minutes: int
+    started_at: datetime | None
+    ended_at: datetime | None
+
+
+Agenda = Annotated[list[AgendaItemIn], Field(max_length=MAX_AGENDA_ITEMS)]
 
 
 class MeetingOut(BaseModel):
@@ -45,6 +66,8 @@ class MeetingOut(BaseModel):
     ended_at: datetime | None
     created_at: datetime
     host: UserOut
+    # The ORM attribute is agenda_items; the API calls it agenda.
+    agenda: list[AgendaItemOut] = Field(validation_alias="agenda_items")
 
     @computed_field
     @property
@@ -58,6 +81,7 @@ class ScheduleMeetingIn(BaseModel):
     description: Description | None = None
     scheduled_start: UtcDatetime
     duration_minutes: Duration
+    agenda: Agenda = []
 
 
 class UpdateMeetingIn(BaseModel):
@@ -67,6 +91,8 @@ class UpdateMeetingIn(BaseModel):
     description: Description | None = None
     scheduled_start: UtcDatetime | None = None
     duration_minutes: Duration | None = None
+    # When sent, the whole agenda is replaced by this list.
+    agenda: Agenda | None = None
 
 
 class JoinMeetingIn(BaseModel):

@@ -24,10 +24,7 @@ describe("parseMeetingInput", () => {
     expect(parseMeetingInput(input)).toBe("86412345678");
   });
 
-  it.each(["", "hello", "1234", "123456789012", "864 1234 567x"])(
-    "rejects %j",
-    (input) => {
-      expect(parseMeetingInput(input)).toBeNull();
-    },
-  );
+  it.each(["", "hello", "1234", "123456789012", "864 1234 567x"])("rejects %j", (input) => {
+    expect(parseMeetingInput(input)).toBeNull();
+  });
 });

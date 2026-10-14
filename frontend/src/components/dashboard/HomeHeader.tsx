@@ -18,7 +18,9 @@ export function HomeHeader() {
         <h2 className="h-8 truncate text-2xl leading-8 font-semibold tracking-tight text-navy">
           {now && `${greeting(now)}${firstName ? `, ${firstName}` : ""}`}
         </h2>
-        <p className="mt-1 h-5 text-sm leading-5 text-ink-muted">{now && formatLongDateWithYear(now)}</p>
+        <p className="mt-1 h-5 text-sm leading-5 text-ink-muted">
+          {now && formatLongDateWithYear(now)}
+        </p>
       </div>
       <p className="h-9 text-3xl leading-9 font-semibold tracking-tight text-navy tabular-nums">
         {now && formatTime(now)}

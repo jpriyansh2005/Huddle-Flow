@@ -15,6 +15,7 @@ from app.core.exceptions import (
 from app.core.time import utc_now
 from app.models import Meeting, MeetingKind, MeetingStatus, Participant, User
 from app.schemas.meeting import ScheduleMeetingIn, UpdateMeetingIn
+from app.services import agenda_service
 from app.services.meeting_code import generate_meeting_code, normalize_meeting_code
 
 RECENT_LIMIT = 20
@@ -51,6 +52,7 @@ def schedule_meeting(db: Session, host: User, data: ScheduleMeetingIn) -> Meetin
         scheduled_start=data.scheduled_start,
         duration_minutes=data.duration_minutes,
     )
+    agenda_service.replace_agenda(meeting, data.agenda)
     db.add(meeting)
     db.commit()
     return meeting
@@ -108,6 +110,13 @@ def update_meeting(db: Session, meeting: Meeting, user: User, data: UpdateMeetin
     changes = data.model_dump(exclude_unset=True)
     if "description" in changes:
         meeting.description = changes.pop("description") or None
+    agenda = changes.pop("agenda", None)
+    if agenda is not None:
+        if meeting.status != MeetingStatus.SCHEDULED:
+            # Replacing it would wipe the live progress; the host changes the
+            # agenda of a running meeting from inside the meeting.
+            raise MeetingInProgressError()
+        agenda_service.replace_agenda(meeting, data.agenda or [])
     # The remaining columns are required, so a null means "leave unchanged".
     for field, value in changes.items():
         if value is None:
@@ -146,6 +155,7 @@ def end_meeting(db: Session, meeting: Meeting) -> Meeting:
     now = utc_now()
     meeting.status = MeetingStatus.ENDED
     meeting.ended_at = now
+    agenda_service.close_running_item(meeting, now)
     still_present = db.scalars(
         select(Participant).where(
             Participant.meeting_id == meeting.id, Participant.left_at.is_(None)

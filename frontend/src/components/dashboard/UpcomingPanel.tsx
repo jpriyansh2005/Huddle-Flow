@@ -95,7 +95,9 @@ export function UpcomingPanel() {
               <CalendarDays size={26} strokeWidth={1.6} />
             </span>
             <p className="text-sm font-medium text-ink">No meetings scheduled</p>
-            <p className="mt-1 text-[13px] text-ink-muted">Plan one ahead and it will show up here.</p>
+            <p className="mt-1 text-[13px] text-ink-muted">
+              Plan one ahead and it will show up here.
+            </p>
             <button
               type="button"
               onClick={() => openScheduleDialog()}
@@ -109,7 +111,9 @@ export function UpcomingPanel() {
           <div className="py-1.5">
             {groupByDay(shown).map((group) => (
               <div key={group.day}>
-                <h3 className="px-5 pt-3 pb-1 text-[12px] font-medium text-ink-muted">{group.day}</h3>
+                <h3 className="px-5 pt-3 pb-1 text-[12px] font-medium text-ink-muted">
+                  {group.day}
+                </h3>
                 <ul>
                   {group.meetings.map((meeting) => (
                     <UpcomingMeetingRow key={meeting.id} meeting={meeting} />

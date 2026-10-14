@@ -61,7 +61,9 @@ export function JoinByCode() {
           className="w-full max-w-[420px] rounded-2xl border border-line bg-white p-7 shadow-card"
         >
           <h1 className="text-2xl font-semibold tracking-tight text-navy">Join a meeting</h1>
-          <p className="mt-1.5 mb-6 text-sm text-ink-muted">No account needed. You&apos;ll choose your name next.</p>
+          <p className="mt-1.5 mb-6 text-sm text-ink-muted">
+            No account needed. You&apos;ll choose your name next.
+          </p>
 
           <Field label="Meeting ID or invite link" htmlFor="join-code" error={error}>
             <input
@@ -78,7 +80,12 @@ export function JoinByCode() {
             />
           </Field>
 
-          <Button type="submit" size="lg" disabled={!input.trim() || isChecking} className="mt-5 w-full">
+          <Button
+            type="submit"
+            size="lg"
+            disabled={!input.trim() || isChecking}
+            className="mt-5 w-full"
+          >
             {isChecking ? (
               <Spinner className="size-4" />
             ) : (

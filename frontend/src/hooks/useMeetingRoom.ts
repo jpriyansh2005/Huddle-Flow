@@ -5,7 +5,8 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { useToast } from "@/components/ui/Toast";
 import { PeerMesh } from "@/lib/realtime/peerMesh";
 import { type CloseReason, RoomSocket } from "@/lib/realtime/roomSocket";
-import type { ChatMessage, RoomParticipant, ServerEvent } from "@/lib/types";
+import { clockOffset } from "@/lib/agenda";
+import type { AgendaItem, ChatMessage, RoomParticipant, ServerEvent } from "@/lib/types";
 
 import type { LocalMedia } from "./useLocalMedia";
 
@@ -34,6 +35,9 @@ export function useMeetingRoom({ code, token, media }: UseMeetingRoomOptions) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [reactions, setReactions] = useState<Reaction[]>([]);
   const [remoteStreams, setRemoteStreams] = useState(new Map<number, MediaStream>());
+  const [agenda, setAgenda] = useState<AgendaItem[]>([]);
+  // Server clock minus this browser's clock, so agenda timers agree.
+  const [clockOffsetMs, setClockOffsetMs] = useState(0);
 
   const socketRef = useRef<RoomSocket | null>(null);
   const meshRef = useRef<PeerMesh | null>(null);
@@ -50,6 +54,8 @@ export function useMeetingRoom({ code, token, media }: UseMeetingRoomOptions) {
         // everyone who is already here.
         setSelfId(event.self_id);
         setParticipants(event.participants);
+        setAgenda(event.agenda);
+        setClockOffsetMs(clockOffset(event.server_time, Date.now()));
         setStatus("connected");
         mesh?.closeAll();
         mesh?.setLocalTrack("audio", media.audioTrack);
@@ -74,11 +80,19 @@ export function useMeetingRoom({ code, token, media }: UseMeetingRoomOptions) {
       case "signal":
         void mesh?.handleSignal(event.from, event.data);
         break;
+      case "agenda_updated":
+        setAgenda(event.agenda);
+        setClockOffsetMs(clockOffset(event.server_time, Date.now()));
+        break;
       case "chat":
         setMessages((current) => [...current, event.message]);
         break;
       case "reaction": {
-        const reaction = { id: nextReactionId++, participantId: event.participant_id, emoji: event.emoji };
+        const reaction = {
+          id: nextReactionId++,
+          participantId: event.participant_id,
+          emoji: event.emoji,
+        };
         setReactions((current) => [...current, reaction]);
         setTimeout(() => {
           setReactions((current) => current.filter(({ id }) => id !== reaction.id));
@@ -155,6 +169,8 @@ export function useMeetingRoom({ code, token, media }: UseMeetingRoomOptions) {
     messages,
     reactions,
     remoteStreams,
+    agenda,
+    clockOffsetMs,
     sendChat: (text: string) => send({ type: "chat", text }),
     sendReaction: (emoji: string) => send({ type: "reaction", emoji }),
     // Host controls. The server ignores them from anyone who is not the host.
@@ -164,6 +180,11 @@ export function useMeetingRoom({ code, token, media }: UseMeetingRoomOptions) {
     removeParticipant: (participantId: number) =>
       send({ type: "remove_participant", participant_id: participantId }),
     endMeeting: () => send({ type: "end_meeting" }),
+    // Agenda controls, also host only.
+    agendaNext: () => send({ type: "agenda_next" }),
+    agendaBack: () => send({ type: "agenda_back" }),
+    agendaAdd: (title: string, minutes: number) =>
+      send({ type: "agenda_add", title, duration_minutes: minutes }),
   };
 }
 

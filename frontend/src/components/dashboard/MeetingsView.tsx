@@ -38,10 +38,14 @@ export function MeetingsView() {
                 type="button"
                 role="tab"
                 aria-selected={activeTab === tab.id}
-                onClick={() => router.replace(tab.id === "upcoming" ? "/meetings" : "/meetings?tab=previous")}
+                onClick={() =>
+                  router.replace(tab.id === "upcoming" ? "/meetings" : "/meetings?tab=previous")
+                }
                 className={cn(
                   "h-8 rounded-lg px-4 text-sm font-medium transition-colors",
-                  activeTab === tab.id ? "bg-white text-navy shadow-card" : "text-ink-muted hover:text-ink",
+                  activeTab === tab.id
+                    ? "bg-white text-navy shadow-card"
+                    : "text-ink-muted hover:text-ink",
                 )}
               >
                 {tab.label}

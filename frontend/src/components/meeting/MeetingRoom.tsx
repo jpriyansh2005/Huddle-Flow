@@ -10,6 +10,8 @@ import { useMeetingRoom } from "@/hooks/useMeetingRoom";
 import { copyToClipboard } from "@/lib/invitation";
 import { clearSession, type StoredSession } from "@/lib/session";
 
+import { AgendaBar } from "./AgendaBar";
+import { AgendaPanel } from "./AgendaPanel";
 import { ChatPanel } from "./ChatPanel";
 import { MeetingHeader } from "./MeetingHeader";
 import { ParticipantsPanel } from "./ParticipantsPanel";
@@ -105,6 +107,14 @@ export function MeetingRoom({ session }: { session: StoredSession }) {
   return (
     <div className="flex h-dvh flex-col bg-room">
       <MeetingHeader meeting={meeting} status={room.status} />
+      <AgendaBar
+        agenda={room.agenda}
+        clockOffsetMs={room.clockOffsetMs}
+        isHost={isHost}
+        onNext={room.agendaNext}
+        onBack={room.agendaBack}
+        onOpenAgenda={() => setActivePanel("agenda")}
+      />
 
       <div className="flex min-h-0 flex-1 gap-2 p-2">
         <main className="relative flex min-w-0 flex-1">
@@ -145,6 +155,15 @@ export function MeetingRoom({ session }: { session: StoredSession }) {
             onMuteAll={muteAll}
             onMute={room.muteParticipant}
             onRemove={room.removeParticipant}
+          />
+        )}
+        {activePanel === "agenda" && (
+          <AgendaPanel
+            agenda={room.agenda}
+            clockOffsetMs={room.clockOffsetMs}
+            isHost={isHost}
+            onAdd={room.agendaAdd}
+            onClose={() => setActivePanel(null)}
           />
         )}
         {isChatOpen && (

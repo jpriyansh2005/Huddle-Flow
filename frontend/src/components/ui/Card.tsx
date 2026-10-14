@@ -17,7 +17,15 @@ type CardProps = {
 };
 
 /** A white panel with a titled header: the building block of the dashboard. */
-export function Card({ title, titleId, subtitle, actions, footer, children, className }: CardProps) {
+export function Card({
+  title,
+  titleId,
+  subtitle,
+  actions,
+  footer,
+  children,
+  className,
+}: CardProps) {
   return (
     <section
       aria-labelledby={titleId}
@@ -28,7 +36,9 @@ export function Card({ title, titleId, subtitle, actions, footer, children, clas
           <h2 id={titleId} className="text-[15px] font-semibold text-navy">
             {title}
           </h2>
-          {subtitle && <p className="mt-0.5 h-4 text-[12px] leading-4 text-ink-muted">{subtitle}</p>}
+          {subtitle && (
+            <p className="mt-0.5 h-4 text-[12px] leading-4 text-ink-muted">{subtitle}</p>
+          )}
         </div>
         {actions && <div className="flex shrink-0 items-center gap-1">{actions}</div>}
       </header>

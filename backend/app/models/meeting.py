@@ -11,6 +11,7 @@ from app.core.time import utc_now
 from app.db.base import Base, UTCDateTime, enum_column
 
 if TYPE_CHECKING:
+    from app.models.agenda_item import AgendaItem
     from app.models.participant import Participant
     from app.models.user import User
 
@@ -69,6 +70,14 @@ class Meeting(Base):
     host: Mapped[User] = relationship(back_populates="hosted_meetings")
     participants: Mapped[list[Participant]] = relationship(
         back_populates="meeting", cascade="all, delete-orphan"
+    )
+    # Loaded together with the meeting (one extra query for a whole list),
+    # because every meeting response includes its agenda.
+    agenda_items: Mapped[list[AgendaItem]] = relationship(
+        back_populates="meeting",
+        cascade="all, delete-orphan",
+        order_by="AgendaItem.position",
+        lazy="selectin",
     )
 
     @property
