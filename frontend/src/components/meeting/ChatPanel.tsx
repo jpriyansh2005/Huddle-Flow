@@ -41,7 +41,10 @@ export function ChatPanel({ messages, selfId, onSend, onClose }: ChatPanelProps)
       footer={
         <form onSubmit={handleSubmit}>
           <p className="mb-2 text-[12px] text-ink-muted">
-            To: <span className="rounded bg-brand-soft px-1.5 py-0.5 font-medium text-brand">Everyone</span>
+            To:{" "}
+            <span className="rounded bg-brand-soft px-1.5 py-0.5 font-medium text-brand">
+              Everyone
+            </span>
           </p>
           <div className="flex items-center gap-2">
             <input
@@ -74,9 +77,14 @@ export function ChatPanel({ messages, selfId, onSend, onClose }: ChatPanelProps)
           {messages.map((message) => {
             const isOwn = message.sender_id === selfId;
             return (
-              <li key={message.id} className={cn("flex flex-col", isOwn ? "items-end" : "items-start")}>
+              <li
+                key={message.id}
+                className={cn("flex flex-col", isOwn ? "items-end" : "items-start")}
+              >
                 <p className="mb-1 text-[12px] text-ink-muted">
-                  <span className="font-semibold text-ink">{isOwn ? "You" : message.sender_name}</span>{" "}
+                  <span className="font-semibold text-ink">
+                    {isOwn ? "You" : message.sender_name}
+                  </span>{" "}
                   {formatTime(new Date(message.sent_at))}
                 </p>
                 <p

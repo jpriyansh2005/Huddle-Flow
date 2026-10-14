@@ -132,7 +132,9 @@ function NavLinks({ pathname, variant }: { pathname: string; variant: "rail" | "
           variant === "rail"
             ? cn(
                 "h-[58px] w-[62px]",
-                isActive ? "bg-white/12 text-white" : "text-navy-muted hover:bg-navy-hover hover:text-white",
+                isActive
+                  ? "bg-white/12 text-white"
+                  : "text-navy-muted hover:bg-navy-hover hover:text-white",
               )
             : cn("h-[52px] w-20", isActive ? "text-brand" : "text-ink-muted"),
         )}

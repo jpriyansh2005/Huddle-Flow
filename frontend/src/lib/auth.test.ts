@@ -3,9 +3,12 @@ import { describe, expect, it } from "vitest";
 import { isValidEmail, safeNextPath, signInPath } from "./auth";
 
 describe("safeNextPath", () => {
-  it.each(["/", "/meetings", "/meetings?tab=previous", "/recap/86412345678"])("keeps %s", (path) => {
-    expect(safeNextPath(path)).toBe(path);
-  });
+  it.each(["/", "/meetings", "/meetings?tab=previous", "/recap/86412345678"])(
+    "keeps %s",
+    (path) => {
+      expect(safeNextPath(path)).toBe(path);
+    },
+  );
 
   it.each([
     [null, "nothing"],
@@ -36,7 +39,10 @@ describe("isValidEmail", () => {
     expect(isValidEmail(email)).toBe(true);
   });
 
-  it.each(["", "ana", "ana@", "ana@example", "two@@example.com", "a b@x.io"])("rejects %j", (email) => {
-    expect(isValidEmail(email)).toBe(false);
-  });
+  it.each(["", "ana", "ana@", "ana@example", "two@@example.com", "a b@x.io"])(
+    "rejects %j",
+    (email) => {
+      expect(isValidEmail(email)).toBe(false);
+    },
+  );
 });

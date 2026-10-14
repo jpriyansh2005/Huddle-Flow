@@ -55,7 +55,10 @@ export function SignupForm() {
 
   return (
     <>
-      <AuthHeading title="Create your account" subtitle="Host meetings and keep everything in one place." />
+      <AuthHeading
+        title="Create your account"
+        subtitle="Host meetings and keep everything in one place."
+      />
 
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         <Field label="Name" htmlFor="signup-name" error={errors.name}>

@@ -125,21 +125,35 @@ function PreJoinForm({ meeting }: { meeting: Meeting }) {
               {!media.videoOn && (
                 <div className="absolute inset-0 flex items-center justify-center pb-10">
                   <span className="flex size-[30%] max-h-[150px] max-w-[150px] items-center justify-center rounded-full bg-room-control text-[40px] font-semibold text-room-muted">
-                    {name.trim() ? initials(name) : <UserRound className="size-1/2" strokeWidth={1.4} />}
+                    {name.trim() ? (
+                      initials(name)
+                    ) : (
+                      <UserRound className="size-1/2" strokeWidth={1.4} />
+                    )}
                   </span>
                 </div>
               )}
               <div className="absolute inset-x-0 bottom-3 flex justify-center">
                 <PreviewToggle
                   label={media.audioOn ? "Mute" : "Unmute"}
-                  icon={media.audioOn ? <Mic size={22} /> : <MicOff size={22} className="text-room-red" />}
+                  icon={
+                    media.audioOn ? (
+                      <Mic size={22} />
+                    ) : (
+                      <MicOff size={22} className="text-room-red" />
+                    )
+                  }
                   onClick={media.toggleAudio}
                   className="rounded-l-[10px]"
                 />
                 <PreviewToggle
                   label={media.videoOn ? "Stop Video" : "Start Video"}
                   icon={
-                    media.videoOn ? <Video size={22} /> : <VideoOff size={22} className="text-room-red" />
+                    media.videoOn ? (
+                      <Video size={22} />
+                    ) : (
+                      <VideoOff size={22} className="text-room-red" />
+                    )
                   }
                   onClick={media.toggleVideo}
                   className="rounded-r-[10px]"
@@ -154,7 +168,9 @@ function PreJoinForm({ meeting }: { meeting: Meeting }) {
           </section>
 
           <form onSubmit={handleSubmit} className="mx-auto w-full max-w-[400px]">
-            <h1 className="text-center text-2xl font-semibold tracking-tight text-navy">Ready to join?</h1>
+            <h1 className="text-center text-2xl font-semibold tracking-tight text-navy">
+              Ready to join?
+            </h1>
 
             <label htmlFor="prejoin-name" className="mt-5 mb-1.5 block text-sm font-medium">
               Your name

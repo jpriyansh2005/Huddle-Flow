@@ -86,11 +86,7 @@ export function JoinMeetingDialog({ defaultName, onClose }: JoinMeetingDialogPro
         </Field>
 
         <div className="space-y-2.5 pt-1">
-          <Checkbox
-            label="Don't connect to audio"
-            checked={muteAudio}
-            onChange={setMuteAudio}
-          />
+          <Checkbox label="Don't connect to audio" checked={muteAudio} onChange={setMuteAudio} />
           <Checkbox label="Turn off my video" checked={turnOffVideo} onChange={setTurnOffVideo} />
         </div>
 
