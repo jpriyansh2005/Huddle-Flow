@@ -11,6 +11,7 @@ import type {
   ActionItemInput,
   AgendaItem,
   ChatMessage,
+  LiveCaption,
   Note,
   RoomParticipant,
   ServerEvent,
@@ -53,6 +54,9 @@ export function useMeetingRoom({ code, token, media }: UseMeetingRoomOptions) {
   const [clockOffsetMs, setClockOffsetMs] = useState(0);
   // Opens the meeting's recap; shown on the screen after the meeting ends.
   const [recapKey, setRecapKey] = useState<string | null>(null);
+  // Live captions: switched on by the host; the latest line per speaker.
+  const [captionsOn, setCaptionsOn] = useState(false);
+  const [liveCaptions, setLiveCaptions] = useState<Record<number, LiveCaption>>({});
 
   const socketRef = useRef<RoomSocket | null>(null);
   const meshRef = useRef<PeerMesh | null>(null);
@@ -76,6 +80,8 @@ export function useMeetingRoom({ code, token, media }: UseMeetingRoomOptions) {
         setReadCount(event.chat.length);
         setClockOffsetMs(clockOffset(event.server_time, Date.now()));
         setRecapKey(event.recap_key);
+        setCaptionsOn(event.captions_on);
+        setLiveCaptions({});
         setStatus("connected");
         mesh?.closeAll();
         mesh?.setLocalTrack("audio", media.audioTrack);
@@ -96,6 +102,32 @@ export function useMeetingRoom({ code, token, media }: UseMeetingRoomOptions) {
       case "participant_left":
         mesh?.remove(event.participant_id);
         setParticipants((current) => current.filter(({ id }) => id !== event.participant_id));
+        setLiveCaptions((current) => {
+          const rest = { ...current };
+          delete rest[event.participant_id];
+          return rest;
+        });
+        break;
+      case "captions_updated":
+        setCaptionsOn(event.enabled);
+        if (!event.enabled) setLiveCaptions({});
+        showToast(
+          event.enabled
+            ? "Captions are on. What people say is saved to the meeting transcript."
+            : "Captions are off",
+        );
+        break;
+      case "caption":
+        setLiveCaptions((current) => ({
+          ...current,
+          [event.participant_id]: {
+            participantId: event.participant_id,
+            speakerName: event.speaker_name,
+            text: event.text,
+            final: event.final,
+            updatedAt: Date.now(),
+          },
+        }));
         break;
       case "signal":
         void mesh?.handleSignal(event.from, event.data);
@@ -208,6 +240,8 @@ export function useMeetingRoom({ code, token, media }: UseMeetingRoomOptions) {
     agenda,
     clockOffsetMs,
     recapKey,
+    captionsOn,
+    liveCaptions,
     sendChat: (text: string) => send({ type: "chat", text }),
     sendReaction: (emoji: string) => send({ type: "reaction", emoji }),
     // Host controls. The server ignores them from anyone who is not the host.
@@ -217,6 +251,8 @@ export function useMeetingRoom({ code, token, media }: UseMeetingRoomOptions) {
     removeParticipant: (participantId: number) =>
       send({ type: "remove_participant", participant_id: participantId }),
     endMeeting: () => send({ type: "end_meeting" }),
+    setCaptions: (enabled: boolean) => send({ type: "captions_set", enabled }),
+    sendCaption: (text: string, final: boolean) => send({ type: "caption", text, final }),
     // Agenda controls, also host only.
     agendaNext: () => send({ type: "agenda_next" }),
     agendaBack: () => send({ type: "agenda_back" }),

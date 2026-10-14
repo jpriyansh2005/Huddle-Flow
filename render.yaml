@@ -31,3 +31,13 @@ services:
       # The session cookie travels only over HTTPS.
       - key: COOKIE_SECURE
         value: "true"
+      # AI meeting summaries (optional): a Groq API key from
+      # https://console.groq.com/keys. Left empty, the feature is hidden.
+      # For OpenAI instead, set LLM_BASE_URL to empty and LLM_MODEL to an
+      # OpenAI model that supports structured outputs.
+      - key: LLM_API_KEY
+        sync: false
+      - key: LLM_BASE_URL
+        value: https://api.groq.com/openai/v1
+      - key: LLM_MODEL
+        value: openai/gpt-oss-120b

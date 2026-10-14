@@ -1,8 +1,9 @@
 """Handlers for the messages a browser sends over the meeting WebSocket.
 
 Every message is JSON with a ``type`` field. ``EVENT_HANDLERS`` at the bottom
-maps each type to the function that handles it. The agenda, notes and action
-item messages live in their own modules (agenda_events, record_events).
+maps each type to the function that handles it. The agenda, notes, action
+item and caption messages live in their own modules (agenda_events,
+record_events, caption_events).
 
 Client -> server            Server -> clients
 --------------------------  ------------------------------------------
@@ -17,7 +18,7 @@ end_meeting       (host)    meeting_ended
 """
 
 from app.models.chat_message import MAX_CHAT_LENGTH
-from app.realtime import agenda_events, record_events
+from app.realtime import agenda_events, caption_events, record_events
 from app.realtime.context import EventContext, Handler, host_only
 from app.realtime.rooms import CLOSE_MEETING_ENDED, CLOSE_REMOVED_BY_HOST, Connection
 from app.schemas.meeting_record import ChatMessageOut
@@ -139,4 +140,5 @@ EVENT_HANDLERS: dict[str, Handler] = {
     "end_meeting": handle_end_meeting,
     **agenda_events.HANDLERS,
     **record_events.HANDLERS,
+    **caption_events.HANDLERS,
 }

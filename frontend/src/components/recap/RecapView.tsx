@@ -19,7 +19,9 @@ import {
   AttendeesCard,
   ChatCard,
   NotesCard,
+  TranscriptCard,
 } from "./RecapSections";
+import { SummaryCard } from "./SummaryCard";
 
 /** Loads a meeting's recap and lays it out: the record first, people on the side. */
 export function RecapView({ code }: { code: string }) {
@@ -83,9 +85,17 @@ function RecapContent({ recap }: { recap: Recap }) {
           <AttendeesCard attendees={recap.attendees} />
         </aside>
         <div className="grid min-w-0 content-start gap-6 lg:col-start-1 lg:row-start-1">
+          <SummaryCard
+            code={meeting.code}
+            initial={recap.summary}
+            canWrite={recap.viewer.is_host && recap.summaries_enabled}
+          />
           <ActionItemsCard items={recap.action_items} />
           {meeting.agenda.length > 0 && <AgendaCard agenda={meeting.agenda} />}
           <NotesCard notes={recap.notes} />
+          {recap.transcript_total > 0 && (
+            <TranscriptCard lines={recap.transcript} total={recap.transcript_total} />
+          )}
           <ChatCard messages={recap.chat} total={recap.chat_total} />
         </div>
       </div>

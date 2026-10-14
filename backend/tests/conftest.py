@@ -13,6 +13,8 @@ os.environ["MIGRATE_ON_STARTUP"] = "false"
 os.environ["SEED_ON_STARTUP"] = "false"
 os.environ["FRONTEND_URL"] = "http://testserver.local"
 os.environ["EMPTY_ROOM_GRACE_SECONDS"] = "0"
+# Never call a real AI provider from the tests, even with a key in .env.
+os.environ["LLM_API_KEY"] = ""
 
 import httpx
 import pytest

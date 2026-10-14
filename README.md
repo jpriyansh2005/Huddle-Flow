@@ -5,9 +5,9 @@ meeting instantly, join one by meeting ID or invite link, schedule meetings,
 and meet with live audio and video, screen sharing, chat, reactions and host
 controls.
 
-It began as a Zoom clone for the Scaler SDE Fullstack assignment and is being
-grown into its own product, built around what a meeting leaves behind: an
-agenda, shared notes, action items and a recap. See the [roadmap](#roadmap).
+It began as a Zoom clone for the Scaler SDE Fullstack assignment and grew
+into its own product, built around what a meeting leaves behind: an agenda,
+shared notes, action items, live captions and a recap with an AI summary.
 
 | | |
 |---|---|
@@ -56,6 +56,13 @@ agenda, shared notes, action items and a recap. See the [roadmap](#roadmap).
 - The host and signed-in attendees open it from their account; the host can also copy a share link that works without an account
 - Previous meetings and the Action items page link to the recap; it prints cleanly or saves as a PDF
 
+**Live captions and AI summary**
+- The host turns on live captions for the room; everyone sees who is saying what, and a badge says captions are on and saved
+- Speech is turned into text in each speaker's own browser (Web Speech API, Chrome and Edge), so no audio passes through the server
+- Finished sentences are saved as the meeting's transcript and shown on the recap
+- On the recap, the host can have AI write a summary: an overview, key points, decisions and open questions
+- The AI runs on any OpenAI-compatible service: Groq by default (free tier), or OpenAI by changing settings. Without an API key the feature is simply hidden
+
 **Meetings**
 - Instant meetings with a unique 11-digit meeting ID and an invite link (`/j/{id}`)
 - Join by ID or link; a display name is required, and unknown or ended meetings are refused
@@ -78,7 +85,7 @@ agenda, shared notes, action items and a recap. See the [roadmap](#roadmap).
 | 2 | Agenda with timers | Done |
 | 3 | Shared notes, action items and saved chat | Done |
 | 4 | Meeting recap page | Done |
-| 5 | Live captions and an AI summary | Next |
+| 5 | Live captions and an AI summary | Done |
 
 ## Tech stack
 
@@ -89,6 +96,8 @@ agenda, shared notes, action items and a recap. See the [roadmap](#roadmap).
 | Database | MySQL 8 in production; SQLite for local development and tests |
 | Accounts | Argon2 password hashes (pwdlib), server-side sessions in an HttpOnly cookie |
 | Realtime | WebSockets (presence, chat, signalling) and WebRTC (audio, video) |
+| Captions | Web Speech API in the browser |
+| AI summary | Any OpenAI-compatible API through the `openai` Python SDK: Groq (default) or OpenAI |
 | Tests | pytest, Vitest |
 | Tooling | Ruff, ESLint, GitHub Actions |
 
@@ -157,6 +166,9 @@ the example file and edit it.
 | | `COOKIE_SECURE` | `false` | Send the sign-in cookie only over HTTPS; `true` in production |
 | | `DEMO_ENABLED` | `true` | Offer the demo account and seed its sample meetings |
 | | `SEED_ON_STARTUP` | `true` | Insert sample data when the database is empty |
+| | `LLM_API_KEY` | empty | Key for AI summaries; empty switches the feature off |
+| | `LLM_BASE_URL` | `https://api.groq.com/openai/v1` | The AI service; empty means OpenAI |
+| | `LLM_MODEL` | `openai/gpt-oss-120b` | The model; it must support structured (JSON schema) output |
 | `frontend/.env.local` | `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | Where the backend is (read at build time) |
 
 All settings are listed, with comments, in
@@ -251,6 +263,7 @@ running backend.
 | POST | `/meetings/{id}/start` | Enter as the host |
 | POST | `/meetings/{id}/join` | Enter as a guest with a display name |
 | GET | `/meetings/{id}/recap?key=...` | The recap: for the host, signed-in attendees, or with the share key |
+| POST | `/meetings/{id}/summary` | Have AI write (or rewrite) the meeting's summary; host only |
 | GET | `/action-items` | Your action items: assigned to you, or from meetings you hosted |
 | PATCH | `/action-items/{item_id}` | Tick an action item off or reopen it (its owner or the host) |
 | WS | `/ws/meetings/{id}?token=...` | The live room (presence, chat, host controls, agenda, notes, action items) |
@@ -261,8 +274,9 @@ it, which guests do.
 
 ## Database
 
-Eight tables: `users`, `user_sessions`, `meetings`, `participants`,
-`agenda_items`, `notes`, `action_items` and `chat_messages`.
+Ten tables: `users`, `user_sessions`, `meetings`, `participants`,
+`agenda_items`, `notes`, `action_items`, `chat_messages`, `transcript_lines`
+and `meeting_summaries`.
 
 ```mermaid
 erDiagram
@@ -273,6 +287,8 @@ erDiagram
     MEETINGS ||--o{ NOTES : records
     MEETINGS ||--o{ ACTION_ITEMS : produces
     MEETINGS ||--o{ CHAT_MESSAGES : keeps
+    MEETINGS ||--o{ TRANSCRIPT_LINES : captions
+    MEETINGS ||--o| MEETING_SUMMARIES : "summed up by"
     USERS |o--o{ PARTICIPANTS : "attends as (optional)"
     USERS |o--o{ ACTION_ITEMS : "owns (optional)"
 ```
@@ -291,6 +307,8 @@ erDiagram
 - A **note**, an **action item** and a **chat message** belong to a meeting
   and remember who wrote them. An action item's owner is linked to their
   account when they have one, which is what puts it on their Action items page.
+- A **transcript line** is one finished sentence of live captions. A meeting
+  has at most one **summary**, stored as JSON with the model that wrote it.
 
 The full schema, the reasons behind it, and how the realtime and video parts
 work are in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
@@ -347,6 +365,9 @@ backend first, because the frontend needs its address.
    Deploy, then copy the Vercel address.
 5. Back in Render, open the service's **Environment** tab, set `FRONTEND_URL`
    to the Vercel address (no slash at the end) and save. Render redeploys.
+6. Optional, for AI summaries: create a free API key at
+   [console.groq.com/keys](https://console.groq.com/keys) and set it as
+   `LLM_API_KEY` in the same tab. Never commit it to the repository.
 
 ### Things to know about the free tiers
 
@@ -391,6 +412,15 @@ backend first, because the frontend needs its address.
   not a password, but URLs can end up in server logs.
 - **A recap share link cannot be revoked yet.** Anyone who has it can read
   that meeting's recap, the way an "anyone with the link" document works.
+- **Captions need Chrome or Edge.** Firefox has no Web Speech API; people
+  using it still see everyone else's captions. Chrome sends the audio to
+  Google's speech service to recognise it, and captions use the browser's
+  default microphone. They are in the browser's language.
+- **AI summaries send the meeting's text to the AI provider** (notes, action
+  items, transcript and chat). Only the host can ask for one. On Groq's free
+  tier a few summaries a minute are allowed; long meetings are trimmed to fit,
+  keeping the start and end of the transcript. AI can make mistakes, and the
+  recap says so.
 
 ## Use of AI tools
 

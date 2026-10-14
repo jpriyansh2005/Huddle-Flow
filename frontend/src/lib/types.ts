@@ -118,6 +118,37 @@ export type Attendee = {
   seconds_present: number;
 };
 
+/** One finished sentence of live captions, kept in the meeting's transcript. */
+export type TranscriptLine = {
+  id: number;
+  participant_id: number | null;
+  speaker_name: string;
+  text: string;
+  spoken_at: string;
+};
+
+/** The AI-written summary of a meeting. */
+export type MeetingSummary = {
+  overview: string;
+  key_points: string[];
+  decisions: string[];
+  open_questions: string[];
+  /** The model that wrote it. */
+  model: string;
+  created_at: string;
+};
+
+/** What someone is saying right now, as shown over the videos. */
+export type LiveCaption = {
+  participantId: number;
+  speakerName: string;
+  text: string;
+  /** False while the speaker is still in the middle of the sentence. */
+  final: boolean;
+  /** When it last changed, in this browser's clock (ms). */
+  updatedAt: number;
+};
+
 /** Everything a meeting produced, for the recap page. */
 export type Recap = {
   meeting: Meeting;
@@ -127,6 +158,12 @@ export type Recap = {
   /** The latest messages; `chat_total` says how many were sent in all. */
   chat: ChatMessage[];
   chat_total: number;
+  /** The latest transcript lines; `transcript_total` says how many there are. */
+  transcript: TranscriptLine[];
+  transcript_total: number;
+  summary: MeetingSummary | null;
+  /** Whether the server can write summaries (it has an AI provider key). */
+  summaries_enabled: boolean;
   viewer: { is_host: boolean; signed_in: boolean };
   /** The link anyone can open. Only the host receives it. */
   share_url: string | null;
@@ -154,7 +191,16 @@ export type ServerEvent =
       chat: ChatMessage[];
       /** Opens the recap after the meeting, for everyone who attended. */
       recap_key: string;
+      captions_on: boolean;
       server_time: string;
+    }
+  | { type: "captions_updated"; enabled: boolean }
+  | {
+      type: "caption";
+      participant_id: number;
+      speaker_name: string;
+      text: string;
+      final: boolean;
     }
   | { type: "agenda_updated"; agenda: AgendaItem[]; server_time: string }
   | { type: "note_added"; note: Note }
@@ -189,4 +235,6 @@ export type ClientEvent =
   | { type: "note_delete"; id: number }
   | ({ type: "action_add" } & ActionItemInput)
   | ({ type: "action_update"; id: number; done?: boolean } & Partial<ActionItemInput>)
-  | { type: "action_delete"; id: number };
+  | { type: "action_delete"; id: number }
+  | { type: "captions_set"; enabled: boolean }
+  | { type: "caption"; text: string; final: boolean };
