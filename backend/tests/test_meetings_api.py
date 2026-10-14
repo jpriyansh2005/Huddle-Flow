@@ -30,7 +30,7 @@ def test_instant_meeting_is_live_with_id_and_invite_link(api):
     assert meeting["status"] == "live"
     assert len(meeting["code"]) == 11 and meeting["code"].isdigit()
     assert meeting["join_url"] == f"http://testserver.local/j/{meeting['code']}"
-    assert meeting["title"] == "Alex Morgan's Zoom Meeting"
+    assert meeting["title"] == "Alex Morgan's huddle"
 
 
 def test_each_instant_meeting_gets_its_own_id(api):

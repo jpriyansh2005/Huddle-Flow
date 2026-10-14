@@ -4,7 +4,7 @@ const INVITE_LINK_PATTERN = /\/j\/(\d+)/;
 const MIN_LENGTH = 9;
 const MAX_LENGTH = 11;
 
-/** "86412345678" -> "864 1234 5678", the way Zoom displays IDs. */
+/** "86412345678" -> "864 1234 5678": easier to read and to type. */
 export function formatMeetingCode(code: string): string {
   if (code.length !== MAX_LENGTH) {
     return code;

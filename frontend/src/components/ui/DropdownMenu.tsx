@@ -71,7 +71,7 @@ export function DropdownMenu({
               }}
               className={cn(
                 "flex w-full items-center gap-2.5 px-4 py-1.5 text-left text-[13px] whitespace-nowrap hover:bg-hover",
-                item.danger ? "text-zoom-red" : "text-ink",
+                item.danger ? "text-danger" : "text-ink",
               )}
             >
               {item.icon}

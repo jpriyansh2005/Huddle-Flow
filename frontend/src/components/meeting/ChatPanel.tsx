@@ -41,7 +41,7 @@ export function ChatPanel({ messages, selfId, onSend, onClose }: ChatPanelProps)
       footer={
         <form onSubmit={handleSubmit}>
           <p className="mb-2 text-[12px] text-ink-muted">
-            To: <span className="rounded bg-zoom-blue-soft px-1.5 py-0.5 font-medium text-zoom-blue">Everyone</span>
+            To: <span className="rounded bg-brand-soft px-1.5 py-0.5 font-medium text-brand">Everyone</span>
           </p>
           <div className="flex items-center gap-2">
             <input
@@ -51,13 +51,13 @@ export function ChatPanel({ messages, selfId, onSend, onClose }: ChatPanelProps)
               maxLength={1000}
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
-              className="h-10 min-w-0 flex-1 rounded-xl border border-field px-3 text-sm placeholder:text-ink-muted focus:border-zoom-blue focus:outline-none"
+              className="h-10 min-w-0 flex-1 rounded-xl border border-field px-3 text-sm placeholder:text-ink-muted focus:border-brand focus:outline-none"
             />
             <button
               type="submit"
               aria-label="Send message"
               disabled={!draft.trim()}
-              className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-zoom-blue text-white transition-colors hover:bg-zoom-blue-hover disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand text-white transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Send size={17} />
             </button>
@@ -82,7 +82,7 @@ export function ChatPanel({ messages, selfId, onSend, onClose }: ChatPanelProps)
                 <p
                   className={cn(
                     "max-w-[85%] rounded-xl px-3 py-2 text-sm break-words whitespace-pre-wrap",
-                    isOwn ? "bg-zoom-blue-soft" : "bg-canvas",
+                    isOwn ? "bg-brand-soft" : "bg-canvas",
                   )}
                 >
                   {message.text}

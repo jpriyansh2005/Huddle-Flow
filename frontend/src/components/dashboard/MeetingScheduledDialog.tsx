@@ -41,7 +41,7 @@ export function MeetingScheduledDialog({ meeting, onClose }: MeetingScheduledDia
         <Row label="Meeting ID">{formatMeetingCode(meeting.code)}</Row>
         <Row label="Invite link">
           <span className="flex items-center gap-2">
-            <a href={meeting.join_url} className="min-w-0 truncate text-zoom-blue hover:underline">
+            <a href={meeting.join_url} className="min-w-0 truncate text-brand hover:underline">
               {meeting.join_url}
             </a>
             <button
@@ -50,7 +50,7 @@ export function MeetingScheduledDialog({ meeting, onClose }: MeetingScheduledDia
               aria-label="Copy invite link"
               className="flex size-7 shrink-0 items-center justify-center rounded-md text-ink-muted hover:bg-hover"
             >
-              {copied === "link" ? <Check size={15} className="text-zoom-green" /> : <Copy size={15} />}
+              {copied === "link" ? <Check size={15} className="text-accent" /> : <Copy size={15} />}
             </button>
           </span>
         </Row>

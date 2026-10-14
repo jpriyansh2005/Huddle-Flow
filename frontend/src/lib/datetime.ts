@@ -16,7 +16,7 @@ export function formatLongDate(date: Date): string {
   return date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 }
 
-/** "Thursday, May 21, 2026", as under the clock on Zoom's home screen. */
+/** "Thursday, May 21, 2026", as under the clock on the home screen. */
 export function formatLongDateWithYear(date: Date): string {
   return date.toLocaleDateString("en-US", {
     weekday: "long",
@@ -24,6 +24,14 @@ export function formatLongDateWithYear(date: Date): string {
     day: "numeric",
     year: "numeric",
   });
+}
+
+/** "Good morning" before noon, "Good afternoon" until 6 PM, then "Good evening". */
+export function greeting(date: Date): string {
+  const hour = date.getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
 }
 
 /** "Oct 9, 2026" */
@@ -107,7 +115,7 @@ export function fromDateAndTimeInputs(dateValue: string, timeValue: string): Dat
   return new Date(year, month - 1, day, hours, minutes);
 }
 
-/** The next :00 or :30 after `date`, which is what Zoom suggests as a start. */
+/** The next :00 or :30 after `date`: the suggested start of a new meeting. */
 export function nextHalfHour(date: Date): Date {
   const result = new Date(date);
   result.setSeconds(0, 0);

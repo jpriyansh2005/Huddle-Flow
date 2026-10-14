@@ -10,7 +10,7 @@ const ToastContext = createContext<ShowToast | null>(null);
 const VISIBLE_MS = 3000;
 let nextToastId = 1;
 
-/** Short messages at the top of the screen, like Zoom's "Copied to clipboard". */
+/** Short messages at the top of the screen, such as "Copied to clipboard". */
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 

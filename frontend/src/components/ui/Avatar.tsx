@@ -5,16 +5,19 @@ type AvatarProps = {
   name: string;
   /** Width and height in pixels. */
   size?: number;
+  /** A circle (profile pictures) or a rounded square (people lists). */
+  shape?: "circle" | "rounded";
   className?: string;
 };
 
-/** Zoom shows people without a photo as their initials on a rounded square. */
-export function Avatar({ name, size = 36, className }: AvatarProps) {
+/** A person without a photo, shown as their initials on a coloured background. */
+export function Avatar({ name, size = 36, shape = "rounded", className }: AvatarProps) {
   return (
     <span
       aria-hidden
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-[28%] font-bold text-white select-none",
+        "inline-flex shrink-0 items-center justify-center font-semibold text-white select-none",
+        shape === "circle" ? "rounded-full" : "rounded-[28%]",
         className,
       )}
       style={{

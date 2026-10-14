@@ -15,8 +15,8 @@ export type MediaPreferences = {
 
 export type StoredSession = MeetingSession & { media: MediaPreferences };
 
-const SESSION_PREFIX = "zoom-clone:session:";
-const NAME_KEY = "zoom-clone:display-name";
+const SESSION_PREFIX = "huddleflow:session:";
+const NAME_KEY = "huddleflow:display-name";
 
 export function saveSession(session: MeetingSession, media: MediaPreferences): void {
   const stored: StoredSession = { ...session, media };

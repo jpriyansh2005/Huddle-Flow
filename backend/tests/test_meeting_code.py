@@ -25,7 +25,7 @@ def test_generated_codes_differ(db):
         "864-1234-5678",
         "  86412345678  ",
         "http://localhost:3000/j/86412345678",
-        "https://zoom-clone.vercel.app/j/86412345678?from=invite",
+        "https://huddleflow.vercel.app/j/86412345678?from=invite",
     ],
 )
 def test_normalize_accepts_ids_and_invite_links(raw):

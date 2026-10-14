@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, type ReactNode, useCallback, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
+import { Logo } from "@/components/ui/Logo";
 import { Spinner } from "@/components/ui/Spinner";
 import { useFetch } from "@/hooks/useFetch";
 import { useLocalMedia } from "@/hooks/useLocalMedia";
@@ -30,7 +31,7 @@ export function PreJoin({ code }: { code: string }) {
 
   if (loading) {
     return (
-      <div className="flex h-dvh items-center justify-center bg-white text-zoom-blue">
+      <div className="flex h-dvh items-center justify-center bg-canvas text-brand">
         <Spinner className="size-7" />
       </div>
     );
@@ -55,9 +56,8 @@ export function PreJoin({ code }: { code: string }) {
 }
 
 /**
- * Laid out like the "Enter Meeting Info" screen of Zoom's web client: a
- * 700 x 394 preview with Mute and Stop Video under it on the left, and a
- * 400px form on the right, the pair centred on a white page.
+ * A camera preview with Mute and Stop Video buttons on the left and the
+ * name form on the right, the pair centred on the page.
  */
 function PreJoinForm({ meeting }: { meeting: Meeting }) {
   const router = useRouter();
@@ -88,25 +88,28 @@ function PreJoinForm({ meeting }: { meeting: Meeting }) {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-white">
-      <div className="px-6 pt-7 sm:px-10">
+    <div className="flex min-h-dvh flex-col bg-canvas">
+      <header className="flex h-16 shrink-0 items-center justify-between border-b border-line bg-white px-6 sm:px-10">
+        <Link href="/" aria-label="HuddleFlow home" className="rounded-md">
+          <Logo size={30} />
+        </Link>
         <Link
           href="/"
-          className="inline-flex items-center gap-1 rounded text-sm text-zoom-blue hover:underline"
+          className="inline-flex items-center gap-1 rounded text-sm font-medium text-brand hover:underline"
         >
           <ChevronLeft size={15} />
           Back
         </Link>
-      </div>
+      </header>
 
       <main className="flex flex-1 items-center justify-center px-4 py-6">
         <div className="grid w-full max-w-[1136px] items-center gap-9 lg:grid-cols-[minmax(0,700px)_400px]">
           <section aria-label="Camera preview" className="mx-auto w-full max-w-[700px]">
-            <div className="relative aspect-[700/394] overflow-hidden rounded-[14px] bg-room-tile">
+            <div className="relative aspect-[700/394] overflow-hidden rounded-2xl bg-room-tile shadow-card">
               <MediaPlayer source={media.cameraTrack} muted mirrored hidden={!media.videoOn} />
               {!media.videoOn && (
                 <div className="absolute inset-0 flex items-center justify-center pb-10">
-                  <span className="flex size-[30%] max-h-[150px] max-w-[150px] items-center justify-center rounded-[18%] bg-[#3f4044] text-[40px] font-semibold text-room-muted">
+                  <span className="flex size-[30%] max-h-[150px] max-w-[150px] items-center justify-center rounded-full bg-room-control text-[40px] font-semibold text-room-muted">
                     {name.trim() ? initials(name) : <UserRound className="size-1/2" strokeWidth={1.4} />}
                   </span>
                 </div>
@@ -136,10 +139,10 @@ function PreJoinForm({ meeting }: { meeting: Meeting }) {
           </section>
 
           <form onSubmit={handleSubmit} className="mx-auto w-full max-w-[400px]">
-            <h1 className="text-center text-2xl font-bold">Enter Meeting Info</h1>
+            <h1 className="text-center text-2xl font-semibold tracking-tight text-navy">Ready to join?</h1>
 
             <label htmlFor="prejoin-name" className="mt-5 mb-1.5 block text-sm font-medium">
-              Your Name
+              Your name
             </label>
             <input
               id="prejoin-name"
@@ -147,10 +150,10 @@ function PreJoinForm({ meeting }: { meeting: Meeting }) {
               maxLength={64}
               value={name}
               onChange={(event) => setName(event.target.value)}
-              className="h-10 w-full rounded-[10px] border-2 border-[#98a0a9] bg-white px-3 text-sm text-ink focus:border-zoom-blue focus:outline-none"
+              className="h-11 w-full rounded-xl border border-field bg-white px-3.5 text-sm text-ink focus:border-brand focus:ring-2 focus:ring-brand/20 focus:outline-none"
             />
             {error && (
-              <p role="alert" className="mt-2 text-[13px] text-zoom-red">
+              <p role="alert" className="mt-2 text-[13px] text-danger">
                 {error}
               </p>
             )}
@@ -160,7 +163,7 @@ function PreJoinForm({ meeting }: { meeting: Meeting }) {
                 type="checkbox"
                 checked={rememberName}
                 onChange={(event) => setRememberName(event.target.checked)}
-                className="size-4 accent-zoom-blue"
+                className="size-4 accent-brand"
               />
               Remember my name for future meetings
             </label>
@@ -187,7 +190,7 @@ function PreJoinForm({ meeting }: { meeting: Meeting }) {
       </main>
 
       <footer className="pb-6 text-center text-[12px] text-ink-muted">
-        A Zoom clone built for the Scaler SDE Fullstack assignment. Not affiliated with Zoom.
+        HuddleFlow &middot; Meetings that end with a plan
       </footer>
     </div>
   );
@@ -206,7 +209,7 @@ function PreviewToggle({ label, icon, onClick, className }: PreviewToggleProps) 
     <button
       type="button"
       onClick={onClick}
-      className={`flex h-[52px] w-[88px] flex-col items-center justify-center gap-0.5 bg-[#040506] text-[12px] text-room-text hover:bg-[#1b1c1e] ${className ?? ""}`}
+      className={`flex h-[52px] w-[88px] flex-col items-center justify-center gap-0.5 bg-room/90 text-[12px] text-room-text hover:bg-room-hover ${className ?? ""}`}
     >
       {icon}
       {label}

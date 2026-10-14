@@ -13,10 +13,10 @@ BACKEND_DIR = Path(__file__).resolve().parents[2]
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=BACKEND_DIR / ".env", extra="ignore")
 
-    app_name: str = "Zoom Clone API"
+    app_name: str = "HuddleFlow API"
     api_prefix: str = "/api/v1"
 
-    database_url: str = f"sqlite:///{(BACKEND_DIR / 'zoom.db').as_posix()}"
+    database_url: str = f"sqlite:///{(BACKEND_DIR / 'huddleflow.db').as_posix()}"
 
     # Where the Next.js app is served: used for invite links and CORS.
     frontend_url: str = "http://localhost:3000"

@@ -13,11 +13,8 @@ export default function MeetingsPage() {
   return (
     <Suspense
       fallback={
-        <div className="pt-8">
-          <h1 className="mb-5 text-xl font-bold">Meetings</h1>
-          <div className="rounded-lg border border-line">
-            <ListSkeleton rows={4} />
-          </div>
+        <div className="rounded-2xl border border-line bg-white shadow-card">
+          <ListSkeleton rows={4} />
         </div>
       }
     >

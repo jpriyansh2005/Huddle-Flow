@@ -1,6 +1,6 @@
 # Architecture
 
-How the Zoom clone is put together, and why. Read this alongside the code:
+How HuddleFlow is put together, and why. Read this alongside the code:
 each section names the files it describes.
 
 ## The big picture
@@ -231,7 +231,7 @@ sequenceDiagram
 
 Trade-off: in a mesh each person uploads their video once per other
 participant, so it suits small meetings. Large meetings need a media server
-(an SFU), which is what Zoom itself uses.
+(an SFU), which is what large meeting products use.
 
 ## Frontend
 
@@ -249,9 +249,10 @@ src/hooks/               Stateful logic shared by components
 src/lib/                 Plain TypeScript with no React: API client, formatting, WebRTC
 ```
 
-- **The look is measured, not guessed.** Colours, sizes and the font stack in
-  `app/globals.css` were taken from Zoom's own screenshots and web app; the
-  README lists the sources and the known differences.
+- **One design system.** Every colour, shadow and animation is a token in
+  `app/globals.css` (indigo brand, teal accent, navy rail, a dark meeting
+  room), and Tailwind generates the utilities from those tokens, so a colour
+  is changed in one place.
 - **It behaves as a single page application.** Pages fetch from the API in the
   browser and move between routes without reloading. The meeting screens are
   loaded with `ssr: false` because they need the camera, `sessionStorage` and

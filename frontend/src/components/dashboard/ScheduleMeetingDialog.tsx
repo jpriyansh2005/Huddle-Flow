@@ -34,7 +34,7 @@ const TIME_OPTIONS = Array.from({ length: 24 * 4 }, (_, index) => {
   return { value: toTimeInputValue(time), label: formatTime(time) };
 });
 
-/** Zoom's "Schedule meeting" dialog. Also used to edit a scheduled meeting. */
+/** The "Schedule meeting" dialog. Also used to edit a scheduled meeting. */
 export function ScheduleMeetingDialog({ meeting, onClose, onSaved }: ScheduleMeetingDialogProps) {
   const isEdit = meeting !== undefined;
 
@@ -92,7 +92,7 @@ export function ScheduleMeetingDialog({ meeting, onClose, onSaved }: ScheduleMee
 
   return (
     <Modal
-      title={isEdit ? "Edit Meeting" : "Schedule Meeting"}
+      title={isEdit ? "Edit meeting" : "Schedule meeting"}
       onClose={onClose}
       widthClassName="max-w-[520px]"
     >
@@ -196,7 +196,7 @@ export function ScheduleMeetingDialog({ meeting, onClose, onSaved }: ScheduleMee
         </div>
 
         {error && (
-          <p role="alert" className="rounded-lg bg-zoom-red/8 px-3 py-2 text-[13px] text-zoom-red">
+          <p role="alert" className="rounded-lg bg-danger/8 px-3 py-2 text-[13px] text-danger">
             {error}
           </p>
         )}

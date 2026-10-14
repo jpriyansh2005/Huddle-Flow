@@ -1,10 +1,13 @@
-# Zoom Clone
+# HuddleFlow
 
-A video conferencing web app modelled on Zoom: start an instant meeting, join
-one by meeting ID or invite link, schedule meetings, and meet with live audio
-and video, chat and host controls.
+**Meetings that end with a plan.** HuddleFlow is a video meeting app: start a
+meeting instantly, join one by meeting ID or invite link, schedule meetings,
+and meet with live audio and video, screen sharing, chat, reactions and host
+controls.
 
-Built for the Scaler SDE Fullstack assignment.
+It began as a Zoom clone for the Scaler SDE Fullstack assignment and is being
+grown into its own product, built around what a meeting leaves behind: an
+agenda, shared notes, action items and a recap. See the [roadmap](#roadmap).
 
 | | |
 |---|---|
@@ -13,86 +16,42 @@ Built for the Scaler SDE Fullstack assignment.
 
 ![Dashboard](docs/screenshots/dashboard.png)
 
-| Meeting room with host controls | Pre-join screen |
+| Meeting room with the people panel | Joining from an invite link |
 |---|---|
 | ![Meeting room](docs/screenshots/host-controls.png) | ![Pre-join](docs/screenshots/pre-join.png) |
 
 ## Features
 
-### Core requirements
+**Dashboard**
+- Greeting, clock and four quick actions: New meeting, Join, Schedule, Share screen
+- Upcoming meetings grouped by day, with Today / previous / next day controls
+- Recent meetings with their real duration
+- A Meetings page with Upcoming and Previous tabs
+- Copy the invitation or the meeting ID, edit or delete a scheduled meeting
 
-| Requirement | Where to see it |
-|---|---|
-| **Landing dashboard** with Zoom's look | Home: Zoom Workplace's top bar ("+" quick-actions menu, notifications and profile menu; Zoom's search field and back/forward arrows are shown switched off) and navigation rail (settings at the bottom); clock; New meeting, Join, Schedule and Share screen tiles |
-| Upcoming meetings section | The calendar card on Home, grouped by day, with Today / previous / next day controls; full list under Meetings > Upcoming |
-| Recent meetings section | "Recent meetings" on Home; full list under Meetings > Previous |
-| **Instant meeting**: unique ID, invite link, redirect to the room | New meeting creates an 11-digit meeting ID and a `/j/{id}` link, then opens the room |
-| **Join** by meeting ID or invite link | The Join dialog accepts either; opening an invite link goes to a pre-join screen |
-| Enter a display name before joining | Asked in the Join dialog and on the pre-join screen |
-| Validate that the meeting exists | Unknown or ended meetings show an error instead of joining |
-| **Schedule**: title, description, date and time, duration | The Schedule dialog |
-| Auto-generated meeting link, stored in the database | Shown right after saving, with Copy invitation |
-| Shown in Upcoming | Appears at once on Home and under Meetings |
+**Meetings**
+- Instant meetings with a unique 11-digit meeting ID and an invite link (`/j/{id}`)
+- Join by ID or link; a display name is required, and unknown or ended meetings are refused
+- Scheduling with topic, description, date, time and duration; the link is generated when you save
+- Live audio and video between participants (WebRTC), in a gallery that resizes to fit
+- Mute, camera, screen sharing, chat with an unread badge, emoji reactions
+- Host controls: mute everyone, mute one person, remove a person, end the meeting for all
+- Reconnects automatically after a network drop; a refresh keeps your place
 
-### Bonus
+**Everywhere**
+- Responsive: phone, tablet and desktop
+- Loading, empty and error states; a notice while the free server wakes up
 
-- **Responsive design** for phone, tablet and desktop. On phones the tabs move
-  to a bottom bar and the meeting panels open full screen.
-- **Host controls**: mute all, mute one participant, remove a participant, end
-  the meeting for everyone. The server enforces them.
-- **Login/signup is not built.** The brief says to assume a default logged-in
-  user, so that is what the app does. See [Assumptions](#assumptions).
+## Roadmap
 
-### Beyond the brief
-
-- Live audio and video between participants (WebRTC), in a gallery view that
-  resizes to fit the window
-- Screen sharing, in-meeting chat with an unread badge, emoji reactions
-- Edit and delete scheduled meetings; copy the invitation or meeting ID
-- Reconnects automatically after a network drop; a page refresh keeps your
-  place in the meeting
-
-## How closely it matches Zoom
-
-The interface was built against Zoom's own material, not from memory:
-
-| What | Compared with | How |
+| Step | Feature | Status |
 |---|---|---|
-| Home screen layout: top bar, navigation rail, clock, action tiles, calendar card | The home-tab screenshot in Zoom's support article "Getting started with the Zoom Workplace desktop app" | Sizes and positions read off the screenshot; colours sampled from its pixels |
-| Meeting toolbar, title bar, video tiles and name labels | The in-meeting screenshot in the same article | Colours sampled from its pixels; labels and order copied |
-| Font, buttons, text fields and dialogs | The live Zoom web app at app.zoom.us | Values read from its stylesheet in a browser |
-| Pre-join screen ("Enter Meeting Info") | The same screen of Zoom's web client, opened from Zoom's public test meeting | Element sizes and positions read from the live page: a 700 x 394 preview and a 400px form |
-| Full-page notices (meeting ended, invalid link) | Zoom's "Join meeting" launch page | Layout copied: wordmark header, centred heading, 400px button |
-
-Measured values used in the app include the grey frame `#DFE2E7`, the tile
-orange `#FF5F0F`, the button blue `#0D6BDE`, the meeting background `#131619`,
-the in-meeting red `#FF0055`, 40px inputs with 12px corners, and Zoom's own
-font stack (the system font: Segoe UI on Windows, SF Pro on macOS).
-
-It is not pixel-identical. Known differences:
-
-- **Icons and logo.** Zoom's icon set and wordmark are proprietary. The app
-  uses an open-source icon set (Lucide), four hand-drawn tile glyphs and a
-  wordmark drawn with simple strokes, so shapes are close but not the same.
-- **Recent meetings card.** Zoom's home screen has no such card; it is here
-  because the assignment asks for one on the dashboard.
-- **Calendar card.** Zoom shows one day at a time from a connected calendar.
-  Here the card lists upcoming meetings from the selected day onward, so a
-  meeting scheduled for next week is visible without paging to it.
-- **Join dialog.** Zoom's asks only for the meeting ID. This one also asks
-  for a display name, which the assignment requires.
-- **Left out.** The "My notes" tile, AI Companion, whiteboard, recording,
-  breakout rooms, waiting room and the green outline around the person
-  speaking.
-- **Pre-join screen.** Zoom first asks "Do you want people to see you in the
-  meeting?" in a dialog; here the browser's own permission prompt does that
-  job. Zoom's legal text is replaced with this project's own wording.
-- **Not compared.** Zoom's schedule form and its in-meeting participants and
-  chat panels are only visible after signing in or joining a real meeting
-  (joining is protected by bot detection, which was not bypassed), so those
-  screens follow Zoom's general style rather than a measured reference.
-  Zoom has no browser layout for phones (it has native apps), so the phone
-  layout is this project's own adaptation.
+| 0 | HuddleFlow brand: name, logo, colours, layout | Done |
+| 1 | Accounts: sign up, log in, MySQL in production, database migrations | Next |
+| 2 | Agenda with timers | Planned |
+| 3 | Shared notes, action items and saved chat | Planned |
+| 4 | Meeting recap page | Planned |
+| 5 | Live captions and an AI summary | Planned |
 
 ## Tech stack
 
@@ -137,8 +96,8 @@ uvicorn app.main:app --reload --port 8000
 ```
 
 The API is now at http://localhost:8000 and its interactive documentation at
-http://localhost:8000/docs. On first start it creates `backend/zoom.db` and
-fills it with sample meetings.
+http://localhost:8000/docs. On first start it creates `backend/huddleflow.db`
+and fills it with sample meetings.
 
 ### 2. Frontend
 
@@ -160,25 +119,25 @@ the example file and edit it.
 | `backend/.env` | `FRONTEND_URL` | `http://localhost:3000` | Allowed browser origin (CORS) and the base of invite links |
 | | `EXTRA_CORS_ORIGINS` | empty | More allowed origins, comma separated |
 | | `CORS_ORIGIN_REGEX` | empty | Allowed origins by pattern, e.g. preview deployments |
-| | `DATABASE_URL` | `backend/zoom.db` | Where the SQLite file lives |
+| | `DATABASE_URL` | `backend/huddleflow.db` | Where the database is |
 | | `SEED_ON_STARTUP` | `true` | Insert sample data when the database is empty |
 | `frontend/.env.local` | `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | Where the backend is |
 
 ### Try a meeting with two people
 
 1. On the dashboard, click **New meeting**. You are in the room as the host.
-2. Click the green shield at the top left and copy the invite link.
+2. Click the info button at the top left and copy the invite link.
 3. Open the link in a **second browser window** (a private window works
    well). Enter a name and join.
-4. You now see each other's video. Try chat, reactions, and the host's
-   **Participants** panel: Mute all, Mute and Remove.
+4. You now see each other's video. Try chat, reactions, and the **People**
+   panel, where the host can mute or remove people.
 
 Two tabs on one computer share one microphone and speakers, so keep at least
 one of them muted to avoid an echo.
 
 ### Reset the sample data
 
-Stop the backend, delete `backend/zoom.db` and start it again.
+Stop the backend, delete `backend/huddleflow.db` and start it again.
 
 ## Tests and checks
 
@@ -207,7 +166,7 @@ running backend.
 
 | Method | Path | What it does |
 |---|---|---|
-| GET | `/users/me` | The logged-in (default) user |
+| GET | `/users/me` | The signed-in user |
 | GET | `/meetings/upcoming` | Scheduled meetings that have not finished |
 | GET | `/meetings/recent` | Past and instant meetings |
 | POST | `/meetings/instant` | Create a meeting that starts now |
@@ -276,8 +235,7 @@ backend first, because the frontend needs its address.
    reads [`render.yaml`](render.yaml).
 2. When asked for `FRONTEND_URL`, enter a placeholder such as
    `http://localhost:3000`. You will correct it in step 5.
-3. Wait for the deploy, then copy the service address, for example
-   `https://zoom-clone-api.onrender.com`.
+3. Wait for the deploy, then copy the service address.
 
 ### Frontend on Vercel
 
@@ -296,33 +254,29 @@ backend first, because the frontend needs its address.
   visit takes up to a minute while it wakes; the dashboard shows a notice.
 - Render's free disk is **wiped on every deploy and restart**. The app
   recreates the database and sample data on startup, so meetings you created
-  earlier are gone after a restart. A paid disk, or a hosted database, would
-  keep them.
+  earlier are gone after a restart. Step 1 of the roadmap moves production to
+  a hosted MySQL database.
 
 ## Assumptions
 
-- **One default user is logged in** (Alex Morgan), as the brief specifies.
-  Every visitor to the dashboard is that user.
+- **One default user is signed in** (Alex Morgan) until accounts arrive in
+  step 1 of the roadmap.
 - **Host or guest is decided by how you enter.** Starting a meeting from the
   dashboard makes you its host. Joining through the Join dialog or an invite
-  link makes you a guest, even in the same browser. This is what lets one
-  person demonstrate host controls with two windows.
+  link makes you a guest, even in the same browser.
 - **Guests need no account**, only a display name.
 - **People can join a scheduled meeting before the host** starts it, as long
   as it has not ended.
 - **An instant meeting ends** one minute after the last person leaves. A
   scheduled meeting stays open until its host ends it.
 - **Times are stored in UTC** and shown in each viewer's own timezone.
-- **Chat and reactions are not saved**; they last as long as the meeting.
+- **Chat and reactions are not saved yet**; they last as long as the meeting.
 - **Meeting passcodes and waiting rooms are out of scope.**
-- Navbar items that belong to other Zoom products (Team Chat, Contacts,
-  Settings, the profile menu) are placeholders, as the brief asks.
 
 ## Known limitations
 
 - **Video is peer to peer.** That suits small meetings; it has been tested
-  with three participants. Each extra person adds an upload for everyone
-  else, which is why Zoom uses media servers for large meetings.
+  with three participants. Large meetings would need a media server (an SFU).
 - **No TURN server.** A public STUN server is enough for most home and office
   networks, but two people who are both behind strict corporate firewalls may
   not see each other's video. Presence, chat and host controls still work.
@@ -334,6 +288,6 @@ backend first, because the frontend needs its address.
 
 ## Use of AI tools
 
-The brief allows AI assistance. This project was built with Claude Code, with
-the commits co-authored accordingly. The design decisions are explained in
+This project was built with Claude Code, with the commits co-authored
+accordingly. The design decisions are explained in
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

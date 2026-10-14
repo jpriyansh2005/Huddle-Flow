@@ -37,7 +37,7 @@ export function DeleteMeetingDialog({ meeting, onClose, onDeleted }: DeleteMeeti
         invite link will stop working. This can&apos;t be undone.
       </p>
       {error && (
-        <p role="alert" className="mt-3 text-[13px] text-zoom-red">
+        <p role="alert" className="mt-3 text-[13px] text-danger">
           {error}
         </p>
       )}

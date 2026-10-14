@@ -1,14 +1,14 @@
 /** Helpers for showing a person when they have no picture. */
 
 const AVATAR_COLORS = [
-  "#0b5cff",
-  "#7b3ff2",
-  "#d6336c",
-  "#e8590c",
-  "#0c8599",
-  "#2f9e44",
-  "#5f3dc4",
-  "#c2255c",
+  "#3b4fe0",
+  "#0fa88f",
+  "#7c3aed",
+  "#db2777",
+  "#c2410c",
+  "#0284c7",
+  "#059669",
+  "#4f46e5",
 ];
 
 /** "Alex Morgan" -> "AM", "priya" -> "P" */

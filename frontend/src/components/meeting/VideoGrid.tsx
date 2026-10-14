@@ -21,7 +21,7 @@ type VideoGridProps = {
   onAutoplayBlocked: () => void;
 };
 
-/** Zoom's gallery view: equal 16:9 tiles, as large as the space allows. */
+/** The gallery view: equal 16:9 tiles, as large as the space allows. */
 export function VideoGrid({
   participants,
   selfId,

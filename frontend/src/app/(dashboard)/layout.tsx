@@ -10,8 +10,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <DashboardProvider>
       <AppShell>
-        {/* Zoom keeps the page content in one narrow centred column. */}
-        <div className="mx-auto w-full max-w-[552px] px-4 pb-10">
+        <div className="mx-auto w-full max-w-6xl px-4 py-6 md:px-8 md:py-8">
           <ServerWakingNotice />
           {children}
         </div>

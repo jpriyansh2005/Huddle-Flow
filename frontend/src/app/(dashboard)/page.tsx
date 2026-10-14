@@ -3,49 +3,41 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { ActionTiles } from "@/components/dashboard/ActionTiles";
+import { HomeHeader } from "@/components/dashboard/HomeHeader";
 import { RecentMeetings } from "@/components/dashboard/RecentMeetings";
-import { HomeClock, UpcomingPanel } from "@/components/dashboard/UpcomingPanel";
+import { UpcomingPanel } from "@/components/dashboard/UpcomingPanel";
+import { Card, CARD_FOOTER_LINK } from "@/components/ui/Card";
 
 export const metadata: Metadata = { title: "Home" };
 
 /** How many past meetings the home screen lists before "View all". */
-const RECENT_ON_HOME = 3;
+const RECENT_ON_HOME = 4;
 
-/**
- * Zoom's home screen is one centred column: the clock, the quick actions,
- * then the calendar card. The recent meetings card below it is this
- * project's addition, because the assignment asks for one on the dashboard.
- */
+/** The home screen: greeting and clock, the quick actions, then the two meeting lists. */
 export default function HomePage() {
   return (
-    <div className="pt-8 md:pt-[min(110px,11vh)]">
-      <HomeClock />
+    <div className="space-y-6">
+      <HomeHeader />
 
-      <section aria-label="Meeting actions" className="mt-7">
+      <section aria-label="Meeting actions">
         <ActionTiles />
       </section>
 
-      <div className="mt-6">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
         <UpcomingPanel />
+        <Card
+          title="Recent meetings"
+          titleId="recent-heading"
+          footer={
+            <Link href="/meetings?tab=previous" className={CARD_FOOTER_LINK}>
+              View all
+              <ChevronRight size={14} />
+            </Link>
+          }
+        >
+          <RecentMeetings limit={RECENT_ON_HOME} />
+        </Card>
       </div>
-
-      <section aria-labelledby="recent-heading" className="mt-4 rounded-lg border border-line">
-        <header className="flex h-[38px] items-center rounded-t-lg border-b border-line bg-canvas px-4">
-          <h2 id="recent-heading" className="text-[13px] font-semibold">
-            Recent meetings
-          </h2>
-        </header>
-        <RecentMeetings limit={RECENT_ON_HOME} />
-        <footer className="border-t border-line">
-          <Link
-            href="/meetings?tab=previous"
-            className="flex h-[35px] items-center gap-1 rounded-b-lg px-4 text-[13px] text-ink hover:bg-hover"
-          >
-            View all
-            <ChevronRight size={14} />
-          </Link>
-        </footer>
-      </section>
     </div>
   );
 }

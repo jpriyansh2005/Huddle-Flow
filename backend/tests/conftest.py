@@ -3,7 +3,7 @@
 import os
 
 # Must be set before the app is imported, because the engine and settings are
-# created at import time. This keeps tests away from the real zoom.db file.
+# created at import time. This keeps tests away from the real database file.
 os.environ["DATABASE_URL"] = "sqlite://"
 os.environ["SEED_ON_STARTUP"] = "false"
 os.environ["FRONTEND_URL"] = "http://testserver.local"

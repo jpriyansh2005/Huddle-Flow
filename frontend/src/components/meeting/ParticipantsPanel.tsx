@@ -39,12 +39,12 @@ export function ParticipantsPanel({
 }: ParticipantsPanelProps) {
   const [pendingRemoval, setPendingRemoval] = useState<RoomParticipant | null>(null);
 
-  // Zoom lists you first, then the host, then everyone else.
+  // You first, then the host, then everyone else.
   const ordered = [...participants].sort((a, b) => rank(a, selfId) - rank(b, selfId));
 
   return (
     <SidePanelFrame
-      title={`Participants (${participants.length})`}
+      title={`People (${participants.length})`}
       onClose={onClose}
       footer={
         <div className="flex gap-2">
@@ -91,7 +91,7 @@ export function ParticipantsPanel({
                     size="sm"
                     variant="secondary"
                     onClick={() => setPendingRemoval(participant)}
-                    className="h-7 px-2.5 text-zoom-red hover:text-zoom-red"
+                    className="h-7 px-2.5 text-danger hover:text-danger"
                   >
                     Remove
                   </Button>
@@ -102,12 +102,12 @@ export function ParticipantsPanel({
                 {audioOn ? (
                   <Mic size={17} aria-label="Unmuted" />
                 ) : (
-                  <MicOff size={17} className="text-zoom-red" aria-label="Muted" />
+                  <MicOff size={17} className="text-danger" aria-label="Muted" />
                 )}
                 {videoOn ? (
                   <Video size={17} aria-label="Video on" />
                 ) : (
-                  <VideoOff size={17} className="text-zoom-red" aria-label="Video off" />
+                  <VideoOff size={17} className="text-danger" aria-label="Video off" />
                 )}
               </div>
             </li>

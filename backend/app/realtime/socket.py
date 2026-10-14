@@ -102,7 +102,7 @@ async def _on_disconnect(
 
 
 async def _end_if_abandoned(code: str, session_factory: sessionmaker[Session]) -> None:
-    """End an instant meeting once everyone has left, like Zoom does.
+    """End an instant meeting once everyone has left.
 
     The wait gives someone who is only refreshing the page time to reconnect.
     Scheduled meetings are left alone so they can be started again until

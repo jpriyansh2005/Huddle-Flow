@@ -22,8 +22,8 @@ type VideoTileProps = {
 };
 
 /**
- * One person in the gallery. With the camera off Zoom shows the person's
- * name in the middle of a dark tile, and that is what this does too.
+ * One person in the gallery. With the camera off, the person's name is
+ * shown in the middle of the dark tile.
  */
 export function VideoTile({
   name,
