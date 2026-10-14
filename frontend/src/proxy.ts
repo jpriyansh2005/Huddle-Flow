@@ -20,5 +20,5 @@ export function proxy(request: NextRequest) {
 export const config = {
   // Only the signed-in area. Invite links (/j/...) and meeting rooms work
   // without an account.
-  matcher: ["/", "/meetings/:path*"],
+  matcher: ["/", "/meetings/:path*", "/action-items/:path*"],
 };

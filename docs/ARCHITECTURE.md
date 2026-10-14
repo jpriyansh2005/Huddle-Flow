@@ -84,7 +84,12 @@ erDiagram
     USERS ||--o{ USER_SESSIONS : "signed in as"
     USERS ||--o{ MEETINGS : hosts
     MEETINGS ||--o{ PARTICIPANTS : has
+    MEETINGS ||--o{ AGENDA_ITEMS : plans
+    MEETINGS ||--o{ NOTES : records
+    MEETINGS ||--o{ ACTION_ITEMS : produces
+    MEETINGS ||--o{ CHAT_MESSAGES : keeps
     USERS |o--o{ PARTICIPANTS : "attends as (optional)"
+    USERS |o--o{ ACTION_ITEMS : "owns (optional)"
 
     USERS {
         int id PK
@@ -125,6 +130,43 @@ erDiagram
         datetime joined_at
         datetime left_at
         datetime removed_at
+    }
+    AGENDA_ITEMS {
+        int id PK
+        int meeting_id FK
+        int position "unique per meeting"
+        string title
+        int duration_minutes
+        datetime started_at
+        datetime ended_at
+    }
+    NOTES {
+        int id PK
+        int meeting_id FK
+        int author_participant_id FK "null if the attendance is gone"
+        string author_name
+        text text
+        datetime created_at
+    }
+    ACTION_ITEMS {
+        int id PK
+        int meeting_id FK
+        string text
+        string owner_name "null when unassigned"
+        int owner_user_id FK "null for guests"
+        date due_date
+        bool done
+        int created_by_participant_id FK
+        datetime created_at
+        datetime updated_at
+    }
+    CHAT_MESSAGES {
+        int id PK
+        int meeting_id FK
+        int participant_id FK
+        string sender_name
+        text text
+        datetime sent_at
     }
 ```
 
@@ -231,6 +273,40 @@ The server checks the role again on every host-only WebSocket message
   `(meeting_id, position)` unique constraint. A running meeting's agenda can
   only be extended from inside the meeting, so live progress is never wiped.
 
+### Notes, action items and chat
+
+Files: `backend/app/services/record_service.py`,
+`backend/app/realtime/record_events.py`, `backend/app/api/routes/action_items.py`,
+`frontend/src/components/meeting/NotesPanel.tsx`,
+`frontend/src/components/dashboard/ActionItemsView.tsx`.
+
+- **Written in the room, read anywhere.** During a meeting everything goes over
+  the WebSocket, so every browser sees a change at once. After the meeting,
+  the Action items page uses REST (`GET /action-items`, `PATCH /action-items/{id}`).
+- **Names are copied, ids are kept.** A note stores the author's display name
+  and their participant id. The name keeps the record readable for ever; the
+  id says who may delete it. Foreign keys to participants use `SET NULL`, so
+  the record survives if the attendance row is ever removed.
+- **Owners come from the room.** The browser sends `owner_participant_id`; the
+  server checks that person attended this meeting and copies their name and
+  `user_id`. That is how an item assigned to a signed-in person lands on their
+  own Action items page, while a guest's item still shows their name.
+- **Who may do what.** Anyone in the room adds notes and items and can tick
+  items, like a shared document. Deleting is for whoever added it, or the host.
+  After the meeting, only the item's owner and the meeting's host can tick it,
+  and anyone else gets a 404, so ids of other people's items reveal nothing.
+- **Limits** keep a room small and fast: 2,000 characters per note and 500
+  notes, 500 characters per item and 200 items per meeting, and the latest 200
+  chat messages are sent to a joining browser.
+- **Ticks are optimistic.** The checkbox changes at once. In the room the
+  server's `action_item_saved` confirms it, and the full `room_state` sent on
+  reconnect corrects anything lost; on the Action items page a failed request
+  puts the tick back and shows the error.
+- **Event handlers are split by feature.** `realtime/events.py` keeps the core
+  room events and merges the handler tables of `agenda_events.py` and
+  `record_events.py`. Shared helpers (who is acting, host-only checks, payload
+  validation, "change the meeting and broadcast") live in `realtime/context.py`.
+
 ## Realtime layer
 
 Files: `backend/app/realtime/`, `frontend/src/lib/realtime/`,
@@ -251,6 +327,9 @@ Each browser in a meeting opens one WebSocket:
 | `mute_all`, `mute_participant` (host) | `force_mute` to the target, `participant_updated` | Host controls |
 | `remove_participant` (host) | `removed` to the target, `participant_left` | Host controls |
 | `end_meeting` (host) | `meeting_ended` to everyone | Host controls |
+| `agenda_next`, `agenda_back`, `agenda_add` (host) | `agenda_updated` | Agenda |
+| `note_add`, `note_delete` | `note_added`, `note_deleted` | Shared notes |
+| `action_add`, `action_update`, `action_delete` | `action_item_saved`, `action_item_deleted` | Action items |
 
 The server closes a socket with a specific code when the session is over
 (removed, meeting ended, replaced by another tab), and the browser shows the
@@ -300,7 +379,7 @@ participant, so it suits small meetings. Large meetings need a media server
 ```
 src/app/                 Routes (Next.js App Router)
   (auth)/                Sign in and sign up
-  (dashboard)/           Home and Meetings, sharing the navbar and data
+  (dashboard)/           Home, Meetings and Action items, sharing the navbar and data
   join/                  Join by meeting ID without an account
   j/[code]/              The invite link: pre-join screen
   meeting/[code]/        The meeting room

@@ -73,11 +73,47 @@ export type RoomParticipant = {
 };
 
 export type ChatMessage = {
-  id: string;
-  sender_id: number;
+  id: number;
+  /** The sender's participant id; null if their attendance record is gone. */
+  sender_id: number | null;
   sender_name: string;
   text: string;
   sent_at: string;
+};
+
+/** A shared note written during a meeting. */
+export type Note = {
+  id: number;
+  author_participant_id: number | null;
+  author_name: string;
+  text: string;
+  created_at: string;
+};
+
+/** A task agreed in a meeting. */
+export type ActionItem = {
+  id: number;
+  text: string;
+  owner_name: string | null;
+  owner_user_id: number | null;
+  /** A calendar day, "2026-10-20", with no time or time zone. */
+  due_date: string | null;
+  done: boolean;
+  created_by_participant_id: number | null;
+  created_at: string;
+};
+
+export type ActionItemInput = {
+  text: string;
+  owner_participant_id?: number | null;
+  owner_name?: string | null;
+  due_date?: string | null;
+};
+
+/** An action item on the signed-in user's own list. */
+export type MyActionItem = ActionItem & {
+  meeting: { code: string; title: string; started_at: string | null; ended_at: string | null };
+  assigned_to_me: boolean;
 };
 
 /** WebRTC handshake data relayed between two browsers. */
@@ -91,9 +127,16 @@ export type ServerEvent =
       self_id: number;
       participants: RoomParticipant[];
       agenda: AgendaItem[];
+      notes: Note[];
+      action_items: ActionItem[];
+      chat: ChatMessage[];
       server_time: string;
     }
   | { type: "agenda_updated"; agenda: AgendaItem[]; server_time: string }
+  | { type: "note_added"; note: Note }
+  | { type: "note_deleted"; note_id: number }
+  | { type: "action_item_saved"; action_item: ActionItem }
+  | { type: "action_item_deleted"; action_item_id: number }
   | { type: "participant_joined"; participant: RoomParticipant }
   | { type: "participant_updated"; participant: RoomParticipant }
   | { type: "participant_left"; participant_id: number; reason?: "removed" }
@@ -117,4 +160,9 @@ export type ClientEvent =
   | { type: "end_meeting" }
   | { type: "agenda_next" }
   | { type: "agenda_back" }
-  | { type: "agenda_add"; title: string; duration_minutes: number };
+  | { type: "agenda_add"; title: string; duration_minutes: number }
+  | { type: "note_add"; text: string }
+  | { type: "note_delete"; id: number }
+  | ({ type: "action_add" } & ActionItemInput)
+  | ({ type: "action_update"; id: number; done?: boolean } & Partial<ActionItemInput>)
+  | { type: "action_delete"; id: number };

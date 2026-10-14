@@ -6,7 +6,15 @@ import { useToast } from "@/components/ui/Toast";
 import { PeerMesh } from "@/lib/realtime/peerMesh";
 import { type CloseReason, RoomSocket } from "@/lib/realtime/roomSocket";
 import { clockOffset } from "@/lib/agenda";
-import type { AgendaItem, ChatMessage, RoomParticipant, ServerEvent } from "@/lib/types";
+import type {
+  ActionItem,
+  ActionItemInput,
+  AgendaItem,
+  ChatMessage,
+  Note,
+  RoomParticipant,
+  ServerEvent,
+} from "@/lib/types";
 
 import type { LocalMedia } from "./useLocalMedia";
 
@@ -33,6 +41,11 @@ export function useMeetingRoom({ code, token, media }: UseMeetingRoomOptions) {
   const [selfId, setSelfId] = useState<number | null>(null);
   const [participants, setParticipants] = useState<RoomParticipant[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // How many chat messages have been seen. History that arrives on joining
+  // counts as seen, so a refresh does not show it all as unread again.
+  const [readCount, setReadCount] = useState(0);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [actionItems, setActionItems] = useState<ActionItem[]>([]);
   const [reactions, setReactions] = useState<Reaction[]>([]);
   const [remoteStreams, setRemoteStreams] = useState(new Map<number, MediaStream>());
   const [agenda, setAgenda] = useState<AgendaItem[]>([]);
@@ -55,6 +68,10 @@ export function useMeetingRoom({ code, token, media }: UseMeetingRoomOptions) {
         setSelfId(event.self_id);
         setParticipants(event.participants);
         setAgenda(event.agenda);
+        setNotes(event.notes);
+        setActionItems(event.action_items);
+        setMessages(event.chat);
+        setReadCount(event.chat.length);
         setClockOffsetMs(clockOffset(event.server_time, Date.now()));
         setStatus("connected");
         mesh?.closeAll();
@@ -68,10 +85,10 @@ export function useMeetingRoom({ code, token, media }: UseMeetingRoomOptions) {
       case "participant_joined":
         // The newcomer will call us, so drop any old connection to them.
         mesh?.remove(event.participant.id);
-        setParticipants((current) => upsert(current, event.participant));
+        setParticipants((current) => upsertById(current, event.participant));
         break;
       case "participant_updated":
-        setParticipants((current) => upsert(current, event.participant));
+        setParticipants((current) => upsertById(current, event.participant));
         break;
       case "participant_left":
         mesh?.remove(event.participant_id);
@@ -83,6 +100,18 @@ export function useMeetingRoom({ code, token, media }: UseMeetingRoomOptions) {
       case "agenda_updated":
         setAgenda(event.agenda);
         setClockOffsetMs(clockOffset(event.server_time, Date.now()));
+        break;
+      case "note_added":
+        setNotes((current) => upsertById(current, event.note));
+        break;
+      case "note_deleted":
+        setNotes((current) => current.filter(({ id }) => id !== event.note_id));
+        break;
+      case "action_item_saved":
+        setActionItems((current) => upsertById(current, event.action_item));
+        break;
+      case "action_item_deleted":
+        setActionItems((current) => current.filter(({ id }) => id !== event.action_item_id));
         break;
       case "chat":
         setMessages((current) => [...current, event.message]);
@@ -167,6 +196,10 @@ export function useMeetingRoom({ code, token, media }: UseMeetingRoomOptions) {
     selfId,
     participants,
     messages,
+    readCount,
+    markChatRead: (count: number) => setReadCount(count),
+    notes,
+    actionItems,
     reactions,
     remoteStreams,
     agenda,
@@ -185,13 +218,28 @@ export function useMeetingRoom({ code, token, media }: UseMeetingRoomOptions) {
     agendaBack: () => send({ type: "agenda_back" }),
     agendaAdd: (title: string, minutes: number) =>
       send({ type: "agenda_add", title, duration_minutes: minutes }),
+    // Notes and action items: anyone in the room.
+    addNote: (text: string) => send({ type: "note_add", text }),
+    deleteNote: (id: number) => send({ type: "note_delete", id }),
+    addActionItem: (input: ActionItemInput) => send({ type: "action_add", ...input }),
+    updateActionItem: (id: number, changes: Partial<ActionItemInput> & { done?: boolean }) => {
+      // Tick the box straight away. The server's reply confirms it; if the
+      // message is lost, the full room state sent on reconnect corrects it.
+      const { done } = changes;
+      if (done !== undefined) {
+        setActionItems((current) =>
+          current.map((item) => (item.id === id ? { ...item, done } : item)),
+        );
+      }
+      send({ type: "action_update", id, ...changes });
+    },
+    deleteActionItem: (id: number) => send({ type: "action_delete", id }),
   };
 }
 
-/** Replace the participant with the same id, or add them at the end. */
-function upsert(list: RoomParticipant[], participant: RoomParticipant): RoomParticipant[] {
-  const exists = list.some(({ id }) => id === participant.id);
-  return exists
-    ? list.map((current) => (current.id === participant.id ? participant : current))
-    : [...list, participant];
+/** Replace the item with the same id, or add it at the end. */
+function upsertById<Item extends { id: number }>(list: Item[], item: Item): Item[] {
+  return list.some(({ id }) => id === item.id)
+    ? list.map((current) => (current.id === item.id ? item : current))
+    : [...list, item];
 }

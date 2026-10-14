@@ -3,9 +3,15 @@ import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 /** Grey placeholder rows shown while a list is loading. */
-export function ListSkeleton({ rows = 3 }: { rows?: number }) {
+export function ListSkeleton({
+  rows = 3,
+  label = "Loading meetings",
+}: {
+  rows?: number;
+  label?: string;
+}) {
   return (
-    <ul aria-busy="true" aria-label="Loading meetings">
+    <ul aria-busy="true" aria-label={label}>
       {Array.from({ length: rows }, (_, index) => (
         <li key={index} className="animate-pulse space-y-2 px-5 py-3">
           <div className="h-3 w-28 rounded bg-line" />

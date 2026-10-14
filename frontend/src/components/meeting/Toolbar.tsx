@@ -10,6 +10,7 @@ import {
   Mic,
   MicOff,
   MonitorUp,
+  NotebookPen,
   PhoneOff,
   ShieldHalf,
   SmilePlus,
@@ -22,7 +23,7 @@ import { Popover } from "@/components/ui/Popover";
 import type { LocalMedia } from "@/hooks/useLocalMedia";
 import { cn } from "@/lib/cn";
 
-export type SidePanel = "participants" | "chat" | "agenda";
+export type SidePanel = "participants" | "chat" | "agenda" | "notes";
 
 /** Must match ALLOWED_REACTIONS in backend/app/realtime/events.py. */
 const REACTIONS = ["👏", "👍", "❤️", "😂", "😮", "🎉"];
@@ -99,12 +100,21 @@ export function Toolbar({
           active={activePanel === "chat"}
           onClick={() => onTogglePanel("chat")}
         />
-        <div className="hidden md:block">
+        {/* Below laptop width these two move into the More menu so the bar fits. */}
+        <div className="hidden lg:block">
           <ToolbarButton
             label="Agenda"
             icon={ListChecks}
             active={activePanel === "agenda"}
             onClick={() => onTogglePanel("agenda")}
+          />
+        </div>
+        <div className="hidden lg:block">
+          <ToolbarButton
+            label="Notes"
+            icon={NotebookPen}
+            active={activePanel === "notes"}
+            onClick={() => onTogglePanel("notes")}
           />
         </div>
 
@@ -210,10 +220,21 @@ export function Toolbar({
                   onTogglePanel("agenda");
                   close();
                 }}
-                className={cn(MENU_ITEM_CLASS, "md:hidden")}
+                className={cn(MENU_ITEM_CLASS, "lg:hidden")}
               >
                 <ListChecks size={16} />
                 Agenda
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onTogglePanel("notes");
+                  close();
+                }}
+                className={cn(MENU_ITEM_CLASS, "lg:hidden")}
+              >
+                <NotebookPen size={16} />
+                Notes
               </button>
               {media.canShareScreen && (
                 <button

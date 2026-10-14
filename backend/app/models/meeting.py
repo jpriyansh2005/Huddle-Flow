@@ -11,7 +11,10 @@ from app.core.time import utc_now
 from app.db.base import Base, UTCDateTime, enum_column
 
 if TYPE_CHECKING:
+    from app.models.action_item import ActionItem
     from app.models.agenda_item import AgendaItem
+    from app.models.chat_message import ChatMessage
+    from app.models.note import Note
     from app.models.participant import Participant
     from app.models.user import User
 
@@ -78,6 +81,16 @@ class Meeting(Base):
         cascade="all, delete-orphan",
         order_by="AgendaItem.position",
         lazy="selectin",
+    )
+    # What the meeting produced. Loaded only when asked for.
+    notes: Mapped[list[Note]] = relationship(
+        back_populates="meeting", cascade="all, delete-orphan", order_by="Note.id"
+    )
+    action_items: Mapped[list[ActionItem]] = relationship(
+        back_populates="meeting", cascade="all, delete-orphan", order_by="ActionItem.id"
+    )
+    chat_messages: Mapped[list[ChatMessage]] = relationship(
+        back_populates="meeting", cascade="all, delete-orphan", order_by="ChatMessage.id"
     )
 
     @property

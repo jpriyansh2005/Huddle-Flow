@@ -2,7 +2,7 @@
 
 import { goToSignIn } from "./auth";
 import { API_BASE_URL } from "./config";
-import type { Meeting, MeetingSession, ScheduleMeetingInput, User } from "./types";
+import type { Meeting, MeetingSession, MyActionItem, ScheduleMeetingInput, User } from "./types";
 
 export class ApiError extends Error {
   /** HTTP status code, or 0 when the server could not be reached at all. */
@@ -106,6 +106,14 @@ export const api = {
   /** Enter as a guest with the given display name. No account needed. */
   joinMeeting: (code: string, displayName: string) =>
     post<MeetingSession>(`/meetings/${code}/join`, { display_name: displayName }, SIGNED_OUT_OK),
+
+  // --- action items ---
+  listMyActionItems: () => request<MyActionItem[]>("/action-items"),
+  setActionItemDone: (id: number, done: boolean) =>
+    request<MyActionItem>(`/action-items/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ done }),
+    }),
 };
 
 /** Turn anything thrown into a message that is safe to show to the user. */
