@@ -2,11 +2,43 @@
 
 import ssl as ssl_module
 from collections.abc import Iterator
+from pathlib import Path
 
 from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import get_settings
+
+
+class DatabaseCertificateError(RuntimeError):
+    """DATABASE_SSL_CA names a certificate file that cannot be used."""
+
+
+def _ssl_context(ssl_ca: str | None) -> ssl_module.SSLContext:
+    """Encrypt the connection and check the server's certificate.
+
+    With ``ssl_ca`` the certificate must be signed by that authority (hosted
+    MySQL services such as Aiven use their own); without it, by one the
+    operating system trusts. A missing or broken file stops the app with a
+    message that says which setting to fix, instead of Python's bare
+    "No such file or directory".
+    """
+    if ssl_ca is None:
+        return ssl_module.create_default_context()
+    if not Path(ssl_ca).is_file():
+        raise DatabaseCertificateError(
+            f"DATABASE_SSL_CA is {ssl_ca!r}, but there is no file there. On Render, add the "
+            "certificate under Environment > Secret Files and point DATABASE_SSL_CA to "
+            "/etc/secrets/<file name>."
+        )
+    try:
+        return ssl_module.create_default_context(cafile=ssl_ca)
+    except ssl_module.SSLError as error:
+        raise DatabaseCertificateError(
+            f"DATABASE_SSL_CA is {ssl_ca!r}, but that file is not a valid certificate "
+            f"({error.reason or error}). Paste the whole file, from -----BEGIN CERTIFICATE----- "
+            "to -----END CERTIFICATE-----."
+        ) from None
 
 
 def build_engine(
@@ -23,8 +55,7 @@ def build_engine(
         kwargs.setdefault("pool_pre_ping", True)
         kwargs.setdefault("pool_recycle", 280)
         if ssl:
-            context = ssl_module.create_default_context(cafile=ssl_ca)
-            kwargs.setdefault("connect_args", {"ssl": context})
+            kwargs.setdefault("connect_args", {"ssl": _ssl_context(ssl_ca)})
 
     engine = create_engine(database_url, **kwargs)
 
