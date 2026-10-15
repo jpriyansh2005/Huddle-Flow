@@ -48,6 +48,10 @@ def everyone_receives(sockets) -> dict:
 
 
 def count(db, model) -> int:
+    # End the test's own transaction first. MySQL reads from a snapshot taken
+    # when a transaction starts, so a second count in the same transaction
+    # would not see what the app changed in between.
+    db.rollback()
     return db.scalar(select(func.count()).select_from(model))
 
 

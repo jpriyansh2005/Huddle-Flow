@@ -57,9 +57,9 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    # Dropping a table drops its indexes too. Dropping an index first fails on
+    # MySQL when a foreign key needs it.
     op.drop_table("meeting_summaries")
-    with op.batch_alter_table("transcript_lines") as batch:
-        batch.drop_index("ix_transcript_lines_meeting_id")
     op.drop_table("transcript_lines")
     with op.batch_alter_table("meetings") as batch:
         batch.drop_column("captions_on")

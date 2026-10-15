@@ -12,7 +12,7 @@ from pydantic import SecretStr
 from sqlalchemy import func, select
 
 from app.core.config import Settings
-from app.models import MeetingSummary
+from app.models import Meeting, MeetingSummary, TranscriptLine
 from app.services import summary_service
 from app.services.llm import (
     LLMBadOutputError,
@@ -272,14 +272,15 @@ def test_one_huge_line_is_cut():
     assert kept.endswith("[...]")
 
 
-def test_the_record_stays_within_the_limit(client, meeting, model, monkeypatch, api):
-    host = api.start(meeting)
-    with connected(api, host) as (socket,):
-        for n in range(300):
-            socket.send_json(
-                {"type": "caption", "text": f"Sentence number {n} " * 5, "final": True}
-            )
-            socket.receive_json()
+def test_the_record_stays_within_the_limit(client, meeting, model, monkeypatch, db):
+    # A long transcript, written straight to the database: sending 300
+    # captions through the room would only make the test slow.
+    meeting_id = db.scalar(select(Meeting.id).where(Meeting.code == meeting))
+    db.add_all(
+        TranscriptLine(meeting_id=meeting_id, speaker_name="Alex", text=f"Sentence number {n} " * 5)
+        for n in range(300)
+    )
+    db.commit()
     monkeypatch.setattr(
         "app.services.summary_service.get_settings", lambda: Settings(llm_max_input_chars=4000)
     )
